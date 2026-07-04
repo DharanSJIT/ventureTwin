@@ -53,7 +53,53 @@ const userSchema = new mongoose.Schema({
   activeTemplate: {
     type: String,
     default: 'modern'
-  }
+  },
+  startupBlueprints: [{
+    idea: { type: String, required: true },
+    title: { type: String, required: true },
+    description: { type: String, required: true },
+    marketSize: { type: String, default: '' },
+    estMRR: { type: String, default: '' },
+    competitors: { type: String, default: 'Low' },
+    innovationScore: { type: String, default: '5/10' },
+    status: { type: String, default: 'Evaluating' },
+    details: {
+      validation: { type: String, default: '' },
+      businessModel: { type: String, default: '' },
+      investorSimulation: { type: String, default: '' },
+      revenueForecasting: { type: String, default: '' },
+      fundingReadiness: { type: String, default: '' }
+    },
+    revenueData: [{
+      month: { type: String },
+      revenue: { type: Number }
+    }],
+    competitorData: [{
+      name: { type: String },
+      score: { type: Number }
+    }],
+    createdAt: { type: Date, default: Date.now }
+  }],
+  learningRoadmaps: [{
+    title: { type: String, required: true },
+    description: { type: String, required: true },
+    targetRole: { type: String, required: true },
+    overallProgress: { type: Number, default: 0 },
+    steps: [{
+      title: { type: String, required: true },
+      status: { type: String, enum: ['mastered', 'learning', 'locked'], default: 'locked' },
+      description: { type: String, default: '' },
+      recommendedResources: [{
+        title: { type: String },
+        type: { type: String, enum: ['doc', 'video', 'course', 'book'] }
+      }]
+    }],
+    skillGoals: [{
+      name: { type: String },
+      progress: { type: Number, default: 0 }
+    }],
+    createdAt: { type: Date, default: Date.now }
+  }]
 }, { timestamps: true });
 
 // Hash password before saving

@@ -11,6 +11,7 @@ import Placeholder from './pages/Placeholder';
 import Skills from './pages/Skills';
 import Certifications from './pages/Certifications';
 import Achievements from './pages/Achievements';
+import Insights from './pages/Insights';
 import PortfolioBuilder from './pages/PortfolioBuilder';
 import LivePortfolio from './pages/LivePortfolio';
 import Login from './pages/auth/Login';
@@ -50,7 +51,7 @@ function App() {
           <Route path="/certifications" element={<Certifications />} />
           <Route path="/achievements" element={<Achievements />} />
           <Route path="/opportunities" element={<Placeholder />} />
-          <Route path="/insights" element={<Placeholder />} />
+          <Route path="/insights" element={<Insights />} />
           <Route path="/timeline" element={<Placeholder />} />
           <Route path="/applications" element={<Placeholder />} />
           <Route path="/resume" element={<Resume />} />

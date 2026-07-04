@@ -21,7 +21,8 @@ import {
   Loader2,
   ChevronDown,
   ChevronRight,
-  BriefcaseBusiness
+  BriefcaseBusiness,
+  Rocket
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -43,6 +44,7 @@ import {
 
 const sidebarItems = [
   { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
+  { name: 'Startup Studio', path: '/startup', icon: Rocket },
   { name: 'Decisions', path: '/decisions', icon: GitMerge },
   { 
     name: 'Portfolio', 

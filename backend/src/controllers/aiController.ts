@@ -80,12 +80,12 @@ export const handleAiMessage = async (req: Request, res: Response) => {
         break; // Success, exit retry loop
       } catch (err: any) {
         lastError = err;
-        console.error("DEBUG AI RATE LIMIT:", JSON.stringify(err, Object.getOwnPropertyNames(err), 2));
-        if (err?.status === 429 || (err?.message && err.message.includes('429')) || (err?.message && err.message.includes('quota'))) {
-          console.warn(`[AI] Key rate limited. Retrying... (Attempt ${attempt + 1}/${keysCount})`);
+        console.error("DEBUG AI ERROR:", JSON.stringify(err, Object.getOwnPropertyNames(err), 2));
+        if (err?.status === 429 || err?.status === 503 || (err?.message && (err.message.includes('429') || err.message.includes('503'))) || (err?.message && err.message.includes('quota'))) {
+          console.warn(`[AI] Key rate limited or busy. Retrying... (Attempt ${attempt + 1}/${keysCount})`);
           continue; // Try next key
         }
-        throw err; // Not a rate limit, fail immediately
+        throw err; // fail immediately
       }
     }
 
