@@ -28,9 +28,8 @@ export const resumeStorage = new CloudinaryStorage({
   params: async (req: any, file: any) => {
     return {
       folder: 'venturetwin/resumes',
-      format: 'pdf',
-      resource_type: 'raw', // required for non-image files like pdf
-      public_id: `${req.user?._id || 'user'}_resume`,
+      resource_type: 'raw', 
+      public_id: `${req.user?._id || 'user'}_resume.pdf`, // For raw files, extension in public_id is needed
     };
   },
 });

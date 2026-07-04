@@ -3,16 +3,18 @@ import { useAuthStore } from '../store/authStore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { UploadCloud, FileText, CheckCircle2, Loader2 } from 'lucide-react';
+import { UploadCloud, FileText, CheckCircle2, Loader2, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function Resume() {
   const user = useAuthStore((state) => state.user);
   const login = useAuthStore((state) => state.login);
   
-  const [activeTab, setActiveTab] = useState<'document' | 'text'>(user?.resumeUrl ? 'document' : 'text');
+  const [activeTab, setActiveTab] = useState<'document' | 'text'>('document');
   const [resumeText, setResumeText] = useState(user?.resumeText || '');
   const [isUploading, setIsUploading] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -34,7 +36,15 @@ export default function Resume() {
         body: formData
       });
 
-      const data = await response.json();
+      let data;
+      const isJson = response.headers.get('content-type')?.includes('application/json');
+      if (isJson) {
+        data = await response.json();
+      } else {
+        const text = await response.text();
+        data = { message: `Server error: ${response.statusText}` };
+      }
+
       if (response.ok && user) {
         login({ ...user, resumeUrl: data.resumeUrl });
         setUploadSuccess(true);
@@ -47,6 +57,35 @@ export default function Resume() {
       alert('An error occurred during upload');
     } finally {
       setIsUploading(false);
+    }
+  };
+
+  const handleDeleteResume = () => {
+    setShowDeleteConfirm(true);
+  };
+
+  const executeDelete = async () => {
+    setShowDeleteConfirm(false);
+    setIsDeleting(true);
+    try {
+      const response = await fetch('http://localhost:3000/api/users/resume/file', {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${user?.token}`
+        }
+      });
+
+      const data = await response.json();
+      if (response.ok && user) {
+        login({ ...user, resumeUrl: '' });
+      } else {
+        alert(data.message || 'Delete failed');
+      }
+    } catch (error) {
+      console.error('Error deleting resume:', error);
+      alert('An error occurred during deletion');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -133,9 +172,14 @@ export default function Resume() {
                         <p className="text-sm text-slate-500">Successfully uploaded and parsed.</p>
                       </div>
                     </div>
-                    <Button variant="outline" className="border-slate-200 bg-white" onClick={() => window.open(user.resumeUrl, '_blank')}>
-                      View File
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button variant="ghost" className="text-red-500 hover:text-red-600 hover:bg-red-50 px-3" onClick={handleDeleteResume} disabled={isDeleting}>
+                        {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                      </Button>
+                      <Button variant="outline" className="border-slate-200 bg-white" onClick={() => window.open(user.resumeUrl, '_blank')}>
+                        View File
+                      </Button>
+                    </div>
                   </div>
                 ) : (
                   <label className="border-2 border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center py-16 px-4 bg-slate-50 hover:bg-slate-100/50 transition-colors cursor-pointer group">
@@ -193,6 +237,37 @@ export default function Resume() {
               </CardContent>
             </Card>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showDeleteConfirm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white rounded-2xl shadow-xl border border-slate-200 p-6 w-full max-w-sm"
+            >
+              <div className="flex flex-col items-center text-center space-y-2">
+                <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center text-red-600 mb-2">
+                  <Trash2 className="w-6 h-6" />
+                </div>
+                <h3 className="text-lg font-bold text-slate-900">Delete Resume?</h3>
+                <p className="text-sm text-slate-500">
+                  Are you sure you want to permanently delete your resume? This action cannot be undone.
+                </p>
+                <div className="flex gap-3 w-full pt-6">
+                  <Button variant="outline" className="flex-1 border-slate-200" onClick={() => setShowDeleteConfirm(false)}>
+                    Cancel
+                  </Button>
+                  <Button className="flex-1 bg-red-600 hover:bg-red-700 text-white" onClick={executeDelete}>
+                    Delete
+                  </Button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
     </div>
