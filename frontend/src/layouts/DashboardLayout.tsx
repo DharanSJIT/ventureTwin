@@ -164,22 +164,43 @@ export default function DashboardLayout() {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-auto relative">
+        <main className="flex-1 overflow-auto relative overflow-x-hidden">
           <div className="p-8 mx-auto max-w-7xl h-full">
-            <Outlet />
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={location.pathname}
+                initial={{ opacity: 0, y: 10, filter: 'blur(4px)' }}
+                animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                exit={{ opacity: 0, y: -10, filter: 'blur(4px)' }}
+                transition={{ duration: 0.3, ease: 'easeOut' }}
+                className="h-full"
+              >
+                <Outlet />
+              </motion.div>
+            </AnimatePresence>
           </div>
 
           {/* Floating AI Assistant Toggle */}
           <motion.div 
             className="fixed bottom-6 right-6 z-50"
             initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
+            animate={{ 
+              scale: isAiOpen ? 1 : [1, 1.05, 1],
+              boxShadow: isAiOpen 
+                ? "0px 10px 30px rgba(37, 99, 235, 0.3)" 
+                : ["0px 0px 0px rgba(37, 99, 235, 0)", "0px 0px 20px rgba(37, 99, 235, 0.4)", "0px 0px 0px rgba(37, 99, 235, 0)"]
+            }}
+            transition={!isAiOpen ? {
+              duration: 3,
+              repeat: Infinity,
+              ease: "easeInOut"
+            } : {}}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
             <Button 
               size="icon" 
-              className="h-14 w-14 rounded-full shadow-2xl shadow-blue-900/20 bg-primary hover:bg-blue-700 border border-primary/20"
+              className="h-14 w-14 rounded-full bg-primary hover:bg-blue-700 border border-primary/20"
               onClick={() => setIsAiOpen(!isAiOpen)}
             >
               <Bot className="h-6 w-6 text-white" />

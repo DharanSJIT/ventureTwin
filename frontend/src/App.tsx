@@ -13,6 +13,7 @@ import Register from './pages/auth/Register';
 import Landing from './pages/Landing';
 import ProtectedRoute from './components/ProtectedRoute';
 import { useAuthStore } from './store/authStore';
+import { Toaster } from 'sonner';
 
 // Helper to redirect logged-in users away from auth/landing pages
 function PublicRoute({ children }: { children: React.ReactNode }) {
@@ -54,6 +55,7 @@ function App() {
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      <Toaster position="bottom-right" richColors />
     </Router>
   );
 }

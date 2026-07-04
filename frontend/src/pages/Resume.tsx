@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { UploadCloud, FileText, CheckCircle2, Loader2, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
 
 export default function Resume() {
   const user = useAuthStore((state) => state.user);
@@ -15,14 +16,26 @@ export default function Resume() {
   const [isUploading, setIsUploading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [uploadSuccess, setUploadSuccess] = useState(false);
+  const [parsingStep, setParsingStep] = useState(0);
+
+  const parsingSteps = [
+    "Scanning document...",
+    "Extracting skills...",
+    "Analyzing experience...",
+    "Building Digital Twin..."
+  ];
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     setIsUploading(true);
-    setUploadSuccess(false);
+    setParsingStep(0);
+
+    // Simulate parsing steps visually while uploading
+    const stepInterval = setInterval(() => {
+      setParsingStep(prev => (prev < 3 ? prev + 1 : prev));
+    }, 800);
 
     const formData = new FormData();
     formData.append('resume', file);
@@ -47,15 +60,15 @@ export default function Resume() {
 
       if (response.ok && user) {
         login({ ...user, resumeUrl: data.resumeUrl });
-        setUploadSuccess(true);
-        setTimeout(() => setUploadSuccess(false), 3000);
+        toast.success('Resume uploaded successfully!');
       } else {
-        alert(data.message || 'Upload failed');
+        toast.error(data.message || 'Upload failed');
       }
     } catch (error) {
       console.error('Error uploading resume:', error);
-      alert('An error occurred during upload');
+      toast.error('An error occurred during upload');
     } finally {
+      clearInterval(stepInterval);
       setIsUploading(false);
     }
   };
@@ -78,12 +91,13 @@ export default function Resume() {
       const data = await response.json();
       if (response.ok && user) {
         login({ ...user, resumeUrl: '' });
+        toast.success('Resume deleted successfully');
       } else {
-        alert(data.message || 'Delete failed');
+        toast.error(data.message || 'Delete failed');
       }
     } catch (error) {
       console.error('Error deleting resume:', error);
-      alert('An error occurred during deletion');
+      toast.error('An error occurred during deletion');
     } finally {
       setIsDeleting(false);
     }
@@ -93,7 +107,6 @@ export default function Resume() {
     if (!resumeText.trim()) return;
 
     setIsUploading(true);
-    setUploadSuccess(false);
 
     try {
       const response = await fetch('http://localhost:3000/api/users/resume/text', {
@@ -108,14 +121,13 @@ export default function Resume() {
       const data = await response.json();
       if (response.ok && user) {
         login({ ...user, resumeText: data.resumeText });
-        setUploadSuccess(true);
-        setTimeout(() => setUploadSuccess(false), 3000);
+        toast.success('Text resume saved successfully!');
       } else {
-        alert(data.message || 'Save failed');
+        toast.error(data.message || 'Save failed');
       }
     } catch (error) {
       console.error('Error saving text resume:', error);
-      alert('An error occurred while saving');
+      toast.error('An error occurred while saving');
     } finally {
       setIsUploading(false);
     }
@@ -181,21 +193,44 @@ export default function Resume() {
                       </Button>
                     </div>
                   </div>
+                ) : isUploading ? (
+                  <div className="border border-slate-200 rounded-2xl flex flex-col items-center justify-center py-16 px-4 bg-slate-50/50">
+                    <div className="w-full max-w-sm space-y-6">
+                      <div className="flex flex-col items-center text-center space-y-3">
+                        <div className="w-12 h-12 bg-white rounded-full shadow-sm flex items-center justify-center text-primary relative">
+                          <Loader2 className="w-6 h-6 animate-spin text-primary relative z-10" />
+                          <div className="absolute inset-0 bg-primary/20 rounded-full animate-ping" />
+                        </div>
+                        <h3 className="text-lg font-bold text-slate-900">
+                          {parsingSteps[parsingStep]}
+                        </h3>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <div className="h-2 w-full bg-slate-200 rounded-full overflow-hidden">
+                          <motion.div 
+                            className="h-full bg-primary"
+                            initial={{ width: "0%" }}
+                            animate={{ width: `${((parsingStep + 1) / 4) * 100}%` }}
+                            transition={{ duration: 0.5, ease: "easeInOut" }}
+                          />
+                        </div>
+                        <div className="flex justify-between text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                          <span>Step {parsingStep + 1} of 4</span>
+                          <span>{Math.round(((parsingStep + 1) / 4) * 100)}%</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 ) : (
                   <label className="border-2 border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center py-16 px-4 bg-slate-50 hover:bg-slate-100/50 transition-colors cursor-pointer group">
                     <div className="w-16 h-16 bg-white rounded-full shadow-sm flex items-center justify-center text-primary mb-4 group-hover:scale-110 transition-transform">
-                      {isUploading ? <Loader2 className="w-6 h-6 animate-spin" /> : <UploadCloud className="w-7 h-7" />}
+                      <UploadCloud className="w-7 h-7" />
                     </div>
                     <h3 className="text-lg font-semibold text-slate-900 mb-1">Click to upload or drag and drop</h3>
                     <p className="text-sm text-slate-500 text-center max-w-xs">PDF format only. Maximum file size is 5MB.</p>
                     <input type="file" accept="application/pdf" className="hidden" onChange={handleFileUpload} disabled={isUploading} />
                   </label>
-                )}
-                
-                {uploadSuccess && (
-                  <div className="mt-4 p-3 bg-green-50 text-green-700 rounded-lg flex items-center gap-2 text-sm font-medium">
-                    <CheckCircle2 className="w-4 h-4" /> Upload successful!
-                  </div>
                 )}
               </CardContent>
             </Card>
@@ -221,10 +256,7 @@ export default function Resume() {
                   value={resumeText}
                   onChange={(e) => setResumeText(e.target.value)}
                 />
-                <div className="flex items-center justify-between pt-2">
-                  <div className="text-sm text-slate-500">
-                    {uploadSuccess && <span className="text-green-600 flex items-center gap-1"><CheckCircle2 className="w-4 h-4" /> Saved!</span>}
-                  </div>
+                <div className="flex items-center justify-end pt-2">
                   <Button 
                     className="bg-primary hover:bg-blue-700 text-white rounded-xl shadow-sm px-8" 
                     onClick={handleTextSubmit}
