@@ -983,10 +983,10 @@ router.post('/insights/generate', protect, async (req: Request | any, res: Respo
       return;
     }
 
-    const { GoogleGenerativeAI } = require('@google/genai');
+    const { GoogleGenAI } = require('@google/genai');
     const { Groq } = require('groq-sdk');
     
-    const genAI = new GoogleGenerativeAI({ apiKey: process.env.GEMINI_API_KEY });
+    const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
     const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
     const prompt = `
@@ -1006,9 +1006,11 @@ router.post('/insights/generate', protect, async (req: Request | any, res: Respo
     let generatedText = '';
     
     try {
-      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-      const result = await model.generateContent(prompt);
-      generatedText = result.response.text();
+      const result = await genAI.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: prompt
+      });
+      generatedText = result.text;
     } catch (error: any) {
       console.log('Gemini failed for insights, falling back to Groq');
       const groqResponse = await groq.chat.completions.create({
