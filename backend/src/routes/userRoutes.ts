@@ -7,22 +7,53 @@ import User from '../models/User';
 import { GoogleGenAI } from '@google/genai';
 
 const pdfParse = require('pdf-parse');
-const getAi = () => new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || 'fake-key-to-allow-init' });
+let currentKeyIndex = 0;
+const getAi = () => {
+  const keysStr = process.env.GEMINI_API_KEY || '';
+  const keys = keysStr.split(',').map(k => k.trim()).filter(k => k);
+  if (keys.length === 0) return new GoogleGenAI({ apiKey: 'fake-key-to-allow-init' });
+  
+  const key = keys[currentKeyIndex % keys.length];
+  currentKeyIndex++;
+  return new GoogleGenAI({ apiKey: key });
+};
 async function extractPortfolioData(resumeText: string) {
   try {
-    const ai = getAi();
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: `Extract the following portfolio data from the resume. Return ONLY a valid JSON object with the following four keys:
+    const keysCount = Math.max(1, (process.env.GEMINI_API_KEY || '').split(',').length);
+    let response: any;
+    let lastError: any;
+
+    const prompt = `Extract the following portfolio data from the resume. Return ONLY a valid JSON object with the following four keys:
       1. 'skills' (array of strings, like "React", "Node.js").
       2. 'projects' (array of objects with 'title', 'description' (max 2 sentences), and 'technologies' (array of strings)).
       3. 'certifications' (array of objects with 'name', 'issuer', and 'date' (string, e.g. "2023")).
       4. 'achievements' (array of objects with 'title' and 'description').
-      If any category is not found, return an empty array for that key. Resume: ${resumeText}`,
-      config: {
-        responseMimeType: 'application/json',
+      If any category is not found, return an empty array for that key. Resume: ${resumeText}`;
+
+    for (let attempt = 0; attempt < keysCount; attempt++) {
+      try {
+        const ai = getAi();
+        response = await ai.models.generateContent({
+          model: 'gemini-2.5-flash',
+          contents: prompt,
+          config: {
+            responseMimeType: 'application/json',
+          }
+        });
+        break;
+      } catch (err: any) {
+        lastError = err;
+        if (err?.status === 429 || (err?.message && err.message.includes('429')) || (err?.message && err.message.includes('quota'))) {
+          console.warn(`[Resume Parser] Key rate limited. Retrying... (Attempt ${attempt + 1}/${keysCount})`);
+          continue;
+        }
+        throw err;
       }
-    });
+    }
+
+    if (!response) {
+      throw lastError;
+    }
     
     let text = response.text || '{}';
     
