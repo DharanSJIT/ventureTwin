@@ -3,11 +3,12 @@ import { Badge } from "@/components/ui/badge";
 import { 
   BrainCircuit, TrendingUp, Lightbulb, Target, Briefcase, 
   FolderKanban, Map, Award, Activity, Bell, Rocket, Clock,
-  AlertTriangle, Sparkles, CheckCircle2, Circle
+  AlertTriangle, Sparkles, CheckCircle2, Circle, Code, Trophy
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { useAuthStore } from '../store/authStore';
 
 const analyticsData = [
   { name: "Mon", focus: 60, tasks: 10 },
@@ -127,17 +128,44 @@ const NotificationItem = ({ title, time, subtitle, icon: Icon }: any) => (
 
 export default function Dashboard() {
   const [isLoading, setIsLoading] = useState(true);
+  const { user } = useAuthStore();
 
   useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 1200);
+    const timer = setTimeout(() => setIsLoading(false), 800);
     return () => clearTimeout(timer);
   }, []);
+
+  const projectsCount = user?.projects?.length || 0;
+  const skillsCount = user?.skills?.length || 0;
+  const certsCount = user?.certifications?.length || 0;
+  const achievementsCount = user?.achievements?.length || 0;
+
+  // Calculate some dummy scores based on their profile completion
+  const careerScore = Math.min(100, 20 + (projectsCount * 15) + (certsCount * 10));
+  const learningScore = Math.min(100, 30 + (skillsCount * 5));
+  const portfolioScore = Math.min(100, (user?.resumeUrl ? 25 : 0) + (projectsCount > 0 ? 25 : 0) + (skillsCount > 0 ? 25 : 0) + (certsCount > 0 ? 25 : 0));
+
+  const recentActivity = [];
+  if (user?.resumeUrl) recentActivity.push({ action: "Uploaded Resume", target: "PDF parsed successfully", time: "Recently", icon: CheckCircle2, color: "text-green-600", bg: "bg-green-100" });
+  if (projectsCount > 0) recentActivity.push({ action: "Added Project", target: user.projects[user.projects.length - 1].title, time: "Recently", icon: FolderKanban, color: "text-blue-600", bg: "bg-blue-100" });
+  if (certsCount > 0) recentActivity.push({ action: "Added Certification", target: user.certifications[user.certifications.length - 1].name, time: "Recently", icon: Award, color: "text-emerald-600", bg: "bg-emerald-100" });
+  if (skillsCount > 0) recentActivity.push({ action: "Updated Skills", target: `${user.skills[0]} & others`, time: "Recently", icon: Code, color: "text-indigo-600", bg: "bg-indigo-100" });
+  
+  if (recentActivity.length === 0) {
+    recentActivity.push({ action: "Account Created", target: "Welcome to VentureTwin!", time: "Recently", icon: Sparkles, color: "text-primary", bg: "bg-blue-100" });
+  }
+
+  const timelineItems = [];
+  if (projectsCount > 0) timelineItems.push({ active: true, title: "Project Built", date: "Recent", subtitle: user.projects[0].title });
+  if (certsCount > 0) timelineItems.push({ active: false, title: "Certification Earned", date: "Past", subtitle: user.certifications[0].name });
+  if (achievementsCount > 0) timelineItems.push({ active: false, title: "Achievement unlocked", date: "Past", subtitle: user.achievements[0].title });
+  timelineItems.push({ active: false, title: "Joined Platform", date: "Past", subtitle: "Started building Digital Twin" });
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500 pb-12">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight text-slate-900">Executive Dashboard</h1>
-        <p className="text-slate-500 mt-1">A real-time view of your career, learning, and startup trajectory.</p>
+        <h1 className="text-3xl font-bold tracking-tight text-slate-900">Welcome, {user?.name?.split(' ')[0] || 'User'}!</h1>
+        <p className="text-slate-500 mt-1">A real-time view of your career, learning, and digital twin.</p>
       </div>
 
       {/* Row 1: Circular Progress Scores */}
@@ -150,29 +178,28 @@ export default function Dashboard() {
           ))
         ) : (
           <>
-            <CircularProgress value={82} label="Career Score" subtitle="▲ +4% this month" colorClass="stroke-blue-600" />
-            <CircularProgress value={74} label="Learning Score" subtitle="▲ +9% this month" colorClass="stroke-cyan-500" />
-            <CircularProgress value={68} label="Startup Score" subtitle="▼ -2% this month" colorClass="stroke-pink-500" />
-            <CircularProgress value={91} label="Knowledge Score" subtitle="▲ +6% this month" colorClass="stroke-emerald-500" />
+            <CircularProgress value={careerScore} label="Career Score" subtitle="Based on profile" colorClass="stroke-blue-600" />
+            <CircularProgress value={learningScore} label="Learning Score" subtitle="Based on skills" colorClass="stroke-cyan-500" />
+            <CircularProgress value={portfolioScore} label="Portfolio Strength" subtitle="Profile completeness" colorClass="stroke-emerald-500" />
+            <CircularProgress value={100} label="AI Sync" subtitle="Digital Twin Active" colorClass="stroke-primary" />
           </>
         )}
       </div>
 
       {/* Row 2: Mini Stat Cards */}
-      <div className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+      <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
         {isLoading ? (
-          Array.from({ length: 5 }).map((_, i) => (
+          Array.from({ length: 4 }).map((_, i) => (
             <Card key={i} className="h-28 border-slate-200 shadow-sm overflow-hidden relative">
               <div className="absolute inset-0 bg-slate-100/50 animate-pulse" />
             </Card>
           ))
         ) : (
           <>
-            <MiniStat value="14" label="Projects" icon={FolderKanban} colorClass="bg-indigo-500" />
-            <MiniStat value="37" label="Ideas" icon={Lightbulb} colorClass="bg-amber-500" />
-            <MiniStat value="128" label="Tasks" icon={CheckCircle2} colorClass="bg-blue-500" />
-            <MiniStat value="9" label="Certificates" icon={Award} colorClass="bg-emerald-500" />
-            <MiniStat value="5" label="Roadmaps" icon={Map} colorClass="bg-fuchsia-500" />
+            <MiniStat value={projectsCount} label="Projects" icon={FolderKanban} colorClass="bg-indigo-500" />
+            <MiniStat value={skillsCount} label="Skills" icon={Code} colorClass="bg-amber-500" />
+            <MiniStat value={certsCount} label="Certificates" icon={Award} colorClass="bg-emerald-500" />
+            <MiniStat value={achievementsCount} label="Achievements" icon={Trophy} colorClass="bg-fuchsia-500" />
           </>
         )}
       </div>
@@ -182,7 +209,7 @@ export default function Dashboard() {
         <Card className="col-span-4 border-slate-200 shadow-sm">
           <CardHeader className="pb-2">
             <div className="flex justify-between items-center">
-              <CardTitle className="text-base">Weekly Analytics</CardTitle>
+              <CardTitle className="text-base">Weekly Activity</CardTitle>
               <div className="flex gap-4 text-xs font-medium text-slate-500">
                 <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-primary" /> Focus</span>
                 <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-cyan-400" /> Tasks</span>
@@ -240,17 +267,17 @@ export default function Dashboard() {
                 <div className="bg-emerald-50 border border-emerald-100 p-4 rounded-xl">
                   <div className="flex items-center gap-2 mb-2">
                     <TrendingUp className="w-4 h-4 text-emerald-600" />
-                    <h4 className="text-sm font-bold text-emerald-900">Momentum building in Product Design</h4>
+                    <h4 className="text-sm font-bold text-emerald-900">Momentum in {user?.skills?.[0] || 'Software'}</h4>
                   </div>
-                  <p className="text-xs text-emerald-700 leading-relaxed">Your skill velocity in UX research is up 34% this month — consider a portfolio case study.</p>
+                  <p className="text-xs text-emerald-700 leading-relaxed">Your skill velocity is up! Keep adding projects to strengthen your portfolio.</p>
                 </div>
 
                 <div className="bg-amber-50 border border-amber-100 p-4 rounded-xl">
                   <div className="flex items-center gap-2 mb-2">
                     <AlertTriangle className="w-4 h-4 text-amber-600" />
-                    <h4 className="text-sm font-bold text-amber-900">Roadmap milestone at risk</h4>
+                    <h4 className="text-sm font-bold text-amber-900">Profile completeness</h4>
                   </div>
-                  <p className="text-xs text-amber-700 leading-relaxed">"Launch MVP" is 3 days behind pace based on your current task completion rate.</p>
+                  <p className="text-xs text-amber-700 leading-relaxed">Upload a resume or use the AI Assistant to fill out your portfolio fully.</p>
                 </div>
 
                 <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl">
@@ -258,7 +285,7 @@ export default function Dashboard() {
                     <Rocket className="w-4 h-4 text-primary" />
                     <h4 className="text-sm font-bold text-blue-900">Suggested next step</h4>
                   </div>
-                  <p className="text-xs text-blue-700 leading-relaxed">Founders with your profile typically validate pricing before scaling acquisition — run a pricing sprint.</p>
+                  <p className="text-xs text-blue-700 leading-relaxed">Share your portfolio link to start attracting opportunities based on your skills.</p>
                 </div>
               </div>
             )}
@@ -285,7 +312,7 @@ export default function Dashboard() {
         <Card className="border-slate-200 shadow-sm">
           <CardHeader className="pb-4">
             <CardTitle className="text-base flex items-center gap-2">
-              <Map className="w-4 h-4 text-slate-500" /> Roadmap Timeline
+              <Map className="w-4 h-4 text-slate-500" /> Milestone Timeline
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -293,10 +320,9 @@ export default function Dashboard() {
                <div className="h-64 bg-slate-100/50 animate-pulse rounded-lg" />
             ) : (
               <div className="pl-2">
-                <TimelineItem active={true} title="Idea Validation" date="Jan 2026" subtitle="Customer discovery interviews completed" />
-                <TimelineItem active={false} title="MVP Build" date="Mar 2026" subtitle="Core product shipped to first 50 users" />
-                <TimelineItem active={false} title="Seed Fundraise" date="Jun 2026" subtitle="Currently pitching to 12 investors" />
-                <TimelineItem active={false} title="Series A" date="Q1 2027" subtitle="Target close based on growth metrics" />
+                {timelineItems.map((item, i) => (
+                  <TimelineItem key={i} {...item} />
+                ))}
               </div>
             )}
           </CardContent>
@@ -307,17 +333,17 @@ export default function Dashboard() {
             <CardTitle className="text-base flex items-center gap-2">
               <Bell className="w-4 h-4 text-slate-500" /> Notifications
             </CardTitle>
-            <Badge className="bg-primary hover:bg-blue-700">2 new</Badge>
+            <Badge className="bg-primary hover:bg-blue-700">New</Badge>
           </CardHeader>
           <CardContent className="px-3">
             {isLoading ? (
                <div className="h-64 bg-slate-100/50 animate-pulse rounded-lg mx-3" />
             ) : (
               <div className="space-y-1">
-                <NotificationItem icon={Award} title="Certificate issued" time="2m ago" subtitle='"Advanced Growth Strategy" added to your profile.' />
-                <NotificationItem icon={Sparkles} title="New AI insight" time="38m ago" subtitle='Your twin generated 3 new recommendations.' />
-                <NotificationItem icon={Clock} title="Task reminder" time="1h ago" subtitle='"Finalize investor deck" is due tomorrow.' />
-                <NotificationItem icon={BrainCircuit} title="Comment received" time="3h ago" subtitle='Mira left feedback on your roadmap.' />
+                {certsCount > 0 && <NotificationItem icon={Award} title="Certificate tracked" time="Recently" subtitle={`"${user?.certifications[0]?.name}" added.`} />}
+                {projectsCount > 0 && <NotificationItem icon={FolderKanban} title="Project indexed" time="Recently" subtitle={`"${user?.projects[0]?.title}" is live.`} />}
+                <NotificationItem icon={Sparkles} title="New AI insight" time="1h ago" subtitle='Your twin generated 3 new recommendations.' />
+                <NotificationItem icon={BrainCircuit} title="System update" time="3h ago" subtitle='VentureTwin AI is now fully stateful.' />
               </div>
             )}
           </CardContent>
@@ -337,12 +363,7 @@ export default function Dashboard() {
             <div className="h-32 bg-slate-100/50 animate-pulse rounded-lg" />
           ) : (
             <div className="space-y-4">
-              {[
-                { action: "Completed task", target: "Design onboarding flow v2", time: "10 minutes ago", icon: CheckCircle2, color: "text-green-600", bg: "bg-green-100" },
-                { action: "Added idea", target: "Async standups for remote teams", time: "1 hour ago", icon: Lightbulb, color: "text-amber-600", bg: "bg-amber-100" },
-                { action: "Earned certificate", target: "Lean Startup Fundamentals", time: "Yesterday", icon: Award, color: "text-emerald-600", bg: "bg-emerald-100" },
-                { action: "Invited collaborator", target: "Priya Shah joined Roadmap", time: "2 days ago", icon: FolderKanban, color: "text-blue-600", bg: "bg-blue-100" },
-              ].map((activity, i) => (
+              {recentActivity.map((activity, i) => (
                 <div key={i} className="flex items-center gap-4 text-sm p-3 hover:bg-slate-50 rounded-xl transition-colors">
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center ${activity.bg}`}>
                     <activity.icon className={`w-4 h-4 ${activity.color}`} />
