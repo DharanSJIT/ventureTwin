@@ -17,7 +17,10 @@ import {
   Bot,
   LogOut,
   FileText,
-  Loader2
+  Loader2,
+  ChevronDown,
+  ChevronRight,
+  BriefcaseBusiness
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -40,12 +43,19 @@ import {
 const sidebarItems = [
   { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
   { name: 'Decisions', path: '/decisions', icon: GitMerge },
-  { name: 'Skills', path: '/skills', icon: Crosshair },
-  { name: 'Projects', path: '/projects', icon: FolderKanban },
+  { 
+    name: 'Portfolio', 
+    icon: BriefcaseBusiness,
+    children: [
+      { name: 'Skills', path: '/skills', icon: Crosshair },
+      { name: 'Projects', path: '/projects', icon: FolderKanban },
+      { name: 'Certifications', path: '/certifications', icon: Award },
+      { name: 'Achievements', path: '/achievements', icon: Trophy },
+    ]
+  },
   { name: 'Opportunities', path: '/opportunities', icon: Trophy },
   { name: 'Insights', path: '/insights', icon: Activity },
   { name: 'Timeline', path: '/timeline', icon: Map },
-  { name: 'Certifications', path: '/certifications', icon: Award },
   { name: 'Applications', path: '/applications', icon: Briefcase },
   { name: 'Resume', path: '/resume', icon: FileText },
   { name: 'Learning', path: '/learning', icon: GraduationCap },
@@ -120,6 +130,7 @@ export default function DashboardLayout() {
   // AI Store
   const { messages, isThinking, isOpen: isAiOpen, setIsOpen: setIsAiOpen, addMessage, setThinking, uiState, setUiState } = useAiStore();
   const [inputValue, setInputValue] = useState('');
+  const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({ 'Portfolio': false });
   const chatEndRef = useRef<HTMLDivElement>(null);
   
   const userName = user?.name || 'Guest User';
@@ -188,11 +199,60 @@ export default function DashboardLayout() {
         
         <nav className="flex-1 overflow-y-auto py-4 px-4 space-y-1.5 scrollbar-thin scrollbar-thumb-slate-200">
           {sidebarItems.map((item) => {
-            const isActive = location.pathname.startsWith(item.path);
+            if (item.children) {
+              const isOpen = openMenus[item.name];
+              const toggleMenu = () => setOpenMenus(prev => ({ ...prev, [item.name]: !prev[item.name] }));
+              
+              return (
+                <div key={item.name} className="space-y-1">
+                  <button
+                    onClick={toggleMenu}
+                    className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+                  >
+                    <div className="flex items-center gap-3">
+                      <item.icon className="w-5 h-5 text-slate-400" />
+                      {item.name}
+                    </div>
+                    {isOpen ? <ChevronDown className="w-4 h-4 text-slate-400" /> : <ChevronRight className="w-4 h-4 text-slate-400" />}
+                  </button>
+                  <AnimatePresence>
+                    {isOpen && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden space-y-1 pl-4"
+                      >
+                        {item.children.map((child) => {
+                          const isActive = location.pathname.startsWith(child.path);
+                          return (
+                            <Link
+                              key={child.name}
+                              to={child.path}
+                              className={cn(
+                                "flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-semibold transition-all duration-200",
+                                isActive 
+                                  ? "bg-blue-50 text-primary shadow-sm" 
+                                  : "text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+                              )}
+                            >
+                              <child.icon className={cn("w-4 h-4", isActive ? "text-primary" : "text-slate-400")} />
+                              {child.name}
+                            </Link>
+                          )
+                        })}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              );
+            }
+
+            const isActive = item.path && location.pathname.startsWith(item.path);
             return (
               <Link
                 key={item.name}
-                to={item.path}
+                to={item.path!}
                 className={cn(
                   "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200",
                   isActive 

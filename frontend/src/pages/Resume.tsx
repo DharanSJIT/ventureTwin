@@ -59,7 +59,15 @@ export default function Resume() {
       }
 
       if (response.ok && user) {
-        login({ ...user, resumeUrl: data.resumeUrl, resumeText: data.resumeText, projects: data.projects });
+        login({ 
+          ...user, 
+          resumeUrl: data.resumeUrl, 
+          resumeText: data.resumeText, 
+          projects: data.projects,
+          skills: data.skills,
+          certifications: data.certifications,
+          achievements: data.achievements 
+        });
         toast.success('Resume uploaded successfully!');
       } else {
         toast.error(data.message || 'Upload failed');
@@ -90,7 +98,15 @@ export default function Resume() {
 
       const data = await response.json();
       if (response.ok && user) {
-        login({ ...user, resumeUrl: '', resumeText: '', projects: [] });
+        login({ 
+          ...user, 
+          resumeUrl: undefined, 
+          resumeText: undefined,
+          projects: [],
+          skills: [],
+          certifications: [],
+          achievements: []
+        });
         toast.success('Resume deleted successfully');
       } else {
         toast.error(data.message || 'Delete failed');
@@ -120,7 +136,14 @@ export default function Resume() {
 
       const data = await response.json();
       if (response.ok && user) {
-        login({ ...user, resumeText: data.resumeText, projects: data.projects });
+        login({ 
+          ...user, 
+          resumeText: data.resumeText,
+          projects: data.projects,
+          skills: data.skills,
+          certifications: data.certifications,
+          achievements: data.achievements
+        });
         toast.success('Text resume saved successfully!');
       } else {
         toast.error(data.message || 'Save failed');

@@ -8,6 +8,9 @@ import Learning from './pages/Learning';
 import Settings from './pages/Settings';
 import Resume from './pages/Resume';
 import Placeholder from './pages/Placeholder';
+import Skills from './pages/Skills';
+import Certifications from './pages/Certifications';
+import Achievements from './pages/Achievements';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 import Landing from './pages/Landing';
@@ -35,12 +38,13 @@ function App() {
         <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/decisions" element={<Placeholder />} />
-          <Route path="/skills" element={<Placeholder />} />
+          <Route path="/skills" element={<Skills />} />
           <Route path="/projects" element={<Projects />} />
+          <Route path="/certifications" element={<Certifications />} />
+          <Route path="/achievements" element={<Achievements />} />
           <Route path="/opportunities" element={<Placeholder />} />
           <Route path="/insights" element={<Placeholder />} />
           <Route path="/timeline" element={<Placeholder />} />
-          <Route path="/certifications" element={<Placeholder />} />
           <Route path="/applications" element={<Placeholder />} />
           <Route path="/resume" element={<Resume />} />
           <Route path="/learning" element={<Learning />} />

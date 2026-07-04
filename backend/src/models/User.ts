@@ -35,6 +35,15 @@ const userSchema = new mongoose.Schema({
     title: { type: String, required: true },
     description: { type: String, required: true },
     technologies: { type: [String], default: [] }
+  }],
+  certifications: [{
+    name: { type: String, required: true },
+    issuer: { type: String, required: true },
+    date: { type: String, default: '' }
+  }],
+  achievements: [{
+    title: { type: String, required: true },
+    description: { type: String, required: true }
   }]
 }, { timestamps: true });
 

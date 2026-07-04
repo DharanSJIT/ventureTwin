@@ -9,21 +9,32 @@ import { GoogleGenAI } from '@google/genai';
 const pdfParse = require('pdf-parse');
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || 'fake-key-to-allow-init' });
 
-async function extractProjects(resumeText: string) {
+async function extractPortfolioData(resumeText: string) {
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
-      contents: `Extract all projects from the following resume. Return ONLY a valid JSON array of objects. Each object should have three fields: 'title' (string), 'description' (string, max 2 sentences), and 'technologies' (array of strings). If no projects are found, return []. Resume: ${resumeText}`,
+      contents: `Extract the following portfolio data from the resume. Return ONLY a valid JSON object with the following four keys:
+      1. 'skills' (array of strings, like "React", "Node.js").
+      2. 'projects' (array of objects with 'title', 'description' (max 2 sentences), and 'technologies' (array of strings)).
+      3. 'certifications' (array of objects with 'name', 'issuer', and 'date' (string, e.g. "2023")).
+      4. 'achievements' (array of objects with 'title' and 'description').
+      If any category is not found, return an empty array for that key. Resume: ${resumeText}`,
     });
     
-    let text = response.text || '[]';
+    let text = response.text || '{}';
     // Remove markdown code blocks if present
     text = text.replace(/```json/g, '').replace(/```/g, '').trim();
     
-    return JSON.parse(text);
+    const data = JSON.parse(text);
+    return {
+      skills: Array.isArray(data.skills) ? data.skills : [],
+      projects: Array.isArray(data.projects) ? data.projects : [],
+      certifications: Array.isArray(data.certifications) ? data.certifications : [],
+      achievements: Array.isArray(data.achievements) ? data.achievements : [],
+    };
   } catch (error) {
-    console.error('Failed to extract projects:', error);
-    return [];
+    console.error('Failed to extract portfolio data:', error);
+    return { skills: [], projects: [], certifications: [], achievements: [] };
   }
 }
 
@@ -96,10 +107,15 @@ router.post('/resume/file', protect, resumeUpload.single('resume'), async (req: 
     }
     // ------------------------------
     
-    // --- NEW: Project Extraction ---
+    // --- NEW: Portfolio Extraction ---
     if (user.resumeText && user.resumeText !== 'Error extracting text from PDF') {
-      const extractedProjects = await extractProjects(user.resumeText);
-      user.projects = extractedProjects;
+      const extractedData = await extractPortfolioData(user.resumeText);
+      // Merge unique skills
+      const mergedSkills = new Set([...user.skills, ...extractedData.skills]);
+      user.skills = Array.from(mergedSkills);
+      user.projects = extractedData.projects as any;
+      user.certifications = extractedData.certifications as any;
+      user.achievements = extractedData.achievements as any;
     }
     // ------------------------------
 
@@ -108,7 +124,10 @@ router.post('/resume/file', protect, resumeUpload.single('resume'), async (req: 
     res.json({ 
       message: 'Resume uploaded successfully',
       resumeUrl: user.resumeUrl,
-      projects: user.projects
+      projects: user.projects,
+      skills: user.skills,
+      certifications: user.certifications,
+      achievements: user.achievements
     });
   } catch (error) {
     console.error(error);
@@ -135,9 +154,13 @@ router.post('/resume/text', protect, async (req: Request | any, res: Response): 
 
     user.resumeText = text;
     
-    // --- NEW: Project Extraction ---
-    const extractedProjects = await extractProjects(user.resumeText);
-    user.projects = extractedProjects;
+    // --- NEW: Portfolio Extraction ---
+    const extractedData = await extractPortfolioData(user.resumeText);
+    const mergedSkills = new Set([...user.skills, ...extractedData.skills]);
+    user.skills = Array.from(mergedSkills);
+    user.projects = extractedData.projects as any;
+    user.certifications = extractedData.certifications as any;
+    user.achievements = extractedData.achievements as any;
     // ------------------------------
     
     await user.save();
@@ -145,7 +168,10 @@ router.post('/resume/text', protect, async (req: Request | any, res: Response): 
     res.json({ 
       message: 'Text resume saved successfully',
       resumeText: user.resumeText,
-      projects: user.projects
+      projects: user.projects,
+      skills: user.skills,
+      certifications: user.certifications,
+      achievements: user.achievements
     });
   } catch (error) {
     console.error(error);
@@ -175,6 +201,9 @@ router.delete('/resume/file', protect, async (req: Request | any, res: Response)
     user.resumeUrl = '';
     user.resumeText = '';
     user.projects = [] as any;
+    user.certifications = [] as any;
+    user.achievements = [] as any;
+    user.skills = [];
     await user.save();
 
     res.json({ message: 'Resume deleted successfully' });

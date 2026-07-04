@@ -10,6 +10,8 @@ interface User {
   resumeUrl?: string;
   resumeText?: string;
   projects?: { title: string; description: string; technologies: string[] }[];
+  certifications?: { name: string; issuer: string; date: string }[];
+  achievements?: { title: string; description: string }[];
 }
 
 interface AuthState {
