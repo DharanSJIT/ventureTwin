@@ -22,7 +22,10 @@ import {
   ChevronDown,
   ChevronRight,
   BriefcaseBusiness,
-  Rocket
+  Rocket,
+  Zap,
+  CheckCircle2,
+  MonitorPlay
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -42,31 +45,104 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-const sidebarItems = [
-  { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
-  { name: 'Startup Studio', path: '/startup', icon: Rocket },
-  { name: 'Decisions', path: '/decisions', icon: GitMerge },
-  { 
-    name: 'Portfolio', 
-    icon: BriefcaseBusiness,
-    children: [
-      { name: 'Skills', path: '/skills', icon: Crosshair },
-      { name: 'Projects', path: '/projects', icon: FolderKanban },
-      { name: 'Certifications', path: '/certifications', icon: Award },
-      { name: 'Achievements', path: '/achievements', icon: Trophy },
-      { name: 'Builder', path: '/builder', icon: FileCode2 },
-    ]
-  },
-  { name: 'Opportunities', path: '/opportunities', icon: Trophy },
-  { name: 'Career Graph', path: '/career-graph', icon: Map },
-  { name: 'Insights', path: '/insights', icon: Activity },
-  { name: 'Timeline', path: '/timeline', icon: Map },
+const getSidebarItems = (path: string) => {
+  const commonTop = [
+    { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
+  ];
 
-  { name: 'Resume', path: '/resume', icon: FileText },
-  { name: 'Learning', path: '/learning', icon: GraduationCap },
-  { name: 'Analytics', path: '/analytics', icon: LineChart },
-  { name: 'Settings', path: '/settings', icon: Settings },
-];
+  const commonBottom = [
+    { name: 'Career Graph', path: '/career-graph', icon: Map },
+    { name: 'Insights', path: '/insights', icon: Activity },
+    { name: 'Timeline', path: '/timeline', icon: Map },
+    { name: 'Resume', path: '/resume', icon: FileText },
+    { name: 'Learning', path: '/learning', icon: GraduationCap },
+    { name: 'Analytics', path: '/analytics', icon: LineChart },
+    { name: 'Settings', path: '/settings', icon: Settings },
+  ];
+
+  if (path === 'startup_founder') {
+    return [
+      ...commonTop,
+      { name: 'Startup Studio', path: '/startup', icon: Rocket },
+      { name: 'Founder Decisions', path: '/decisions', icon: GitMerge },
+      { 
+        name: 'Founder Portfolio', 
+        icon: BriefcaseBusiness,
+        children: [
+          { name: 'Skills', path: '/skills', icon: Crosshair },
+          { name: 'Projects', path: '/projects', icon: FolderKanban },
+          { name: 'Certifications', path: '/certifications', icon: Award },
+          { name: 'Achievements', path: '/achievements', icon: Trophy },
+          { name: 'Builder', path: '/builder', icon: FileCode2 },
+        ]
+      },
+      { name: 'Accelerators', path: '/opportunities', icon: Trophy },
+      ...commonBottom
+    ];
+  }
+  
+  if (path === 'product_design') {
+    return [
+      ...commonTop,
+      { name: 'Design Studio', path: '/startup', icon: Rocket },
+      { name: 'UX Reviews', path: '/decisions', icon: GitMerge },
+      { 
+        name: 'Design Portfolio', 
+        icon: BriefcaseBusiness,
+        children: [
+          { name: 'Skills', path: '/skills', icon: Crosshair },
+          { name: 'Prototypes', path: '/projects', icon: FolderKanban },
+          { name: 'Certifications', path: '/certifications', icon: Award },
+          { name: 'Achievements', path: '/achievements', icon: Trophy },
+          { name: 'Builder', path: '/builder', icon: FileCode2 },
+        ]
+      },
+      { name: 'Design Gigs', path: '/opportunities', icon: Trophy },
+      ...commonBottom
+    ];
+  }
+
+  if (path === 'data_science') {
+    return [
+      ...commonTop,
+      { name: 'Data Lab', path: '/startup', icon: Rocket },
+      { name: 'Model Architecture', path: '/decisions', icon: GitMerge },
+      { 
+        name: 'Data Portfolio', 
+        icon: BriefcaseBusiness,
+        children: [
+          { name: 'Skills', path: '/skills', icon: Crosshair },
+          { name: 'Datasets', path: '/projects', icon: FolderKanban },
+          { name: 'Certifications', path: '/certifications', icon: Award },
+          { name: 'Achievements', path: '/achievements', icon: Trophy },
+          { name: 'Builder', path: '/builder', icon: FileCode2 },
+        ]
+      },
+      { name: 'Kaggle & Roles', path: '/opportunities', icon: Trophy },
+      ...commonBottom
+    ];
+  }
+
+  // Default: software_engineering
+  return [
+    ...commonTop,
+    { name: 'Code Studio', path: '/startup', icon: Rocket },
+    { name: 'Architecture Decisions', path: '/decisions', icon: GitMerge },
+    { 
+      name: 'Engineering Portfolio', 
+      icon: BriefcaseBusiness,
+      children: [
+        { name: 'Skills', path: '/skills', icon: Crosshair },
+        { name: 'Projects', path: '/projects', icon: FolderKanban },
+        { name: 'Certifications', path: '/certifications', icon: Award },
+        { name: 'Achievements', path: '/achievements', icon: Trophy },
+        { name: 'Builder', path: '/builder', icon: FileCode2 },
+      ]
+    },
+    { name: 'Tech Jobs & Hacks', path: '/opportunities', icon: Trophy },
+    ...commonBottom
+  ];
+};
 
 function DynamicUIEngine({ uiState }: { uiState: any }) {
   if (!uiState) return null;
@@ -135,12 +211,30 @@ export default function DashboardLayout() {
   // AI Store
   const { messages, isThinking, isOpen: isAiOpen, setIsOpen: setIsAiOpen, addMessage, setThinking, uiState, setUiState } = useAiStore();
   const [inputValue, setInputValue] = useState('');
-  const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({ 'Portfolio': false });
+  const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({});
+  const [isFocusMode, setIsFocusMode] = useState(false);
+  const [islandState, setIslandState] = useState<'idle' | 'analyzing' | 'success'>('idle');
   const chatEndRef = useRef<HTMLDivElement>(null);
   
   const userName = user?.name || 'Guest User';
-  const userPlan = 'Free Plan';
-  const userInitials = userName.substring(0, 2).toUpperCase();
+  const userInitials = userName.split(' ').map((n: string) => n[0]).join('').substring(0, 2);
+  const userPlan = 'Pro';
+
+  // Skill-Reactive Global Theming
+  const primarySkill = user?.skills?.[0]?.toLowerCase() || '';
+  let skillThemeStyle = '';
+  
+  if (primarySkill.includes('react') || primarySkill.includes('flutter')) {
+    skillThemeStyle = `:root { --primary: 199 89% 48%; --ring: 199 89% 48%; }`; // React Cyan
+  } else if (primarySkill.includes('vue') || primarySkill.includes('node') || primarySkill.includes('spring')) {
+    skillThemeStyle = `:root { --primary: 153 60% 53%; --ring: 153 60% 53%; }`; // Vue Green
+  } else if (primarySkill.includes('angular') || primarySkill.includes('java') || primarySkill.includes('ruby')) {
+    skillThemeStyle = `:root { --primary: 348 83% 47%; --ring: 348 83% 47%; }`; // Angular Red
+  } else if (primarySkill.includes('python') || primarySkill.includes('aws') || primarySkill.includes('js')) {
+    skillThemeStyle = `:root { --primary: 43 100% 50%; --ring: 43 100% 50%; }`; // Python Yellow
+  } else if (primarySkill.includes('figma') || primarySkill.includes('ui/ux') || primarySkill.includes('expo')) {
+    skillThemeStyle = `:root { --primary: 271 91% 65%; --ring: 271 91% 65%; }`; // Figma Purple
+  }
 
   const handleLogout = () => {
     logout();
@@ -223,10 +317,16 @@ export default function DashboardLayout() {
   };
 
   return (
-    <div className="flex h-screen bg-slate-50 overflow-hidden text-slate-900 font-sans">
-      {/* Sidebar - White/Blue Theme */}
-      <aside className="w-64 bg-white border-r border-slate-200 flex flex-col hidden md:flex z-20 shadow-sm">
-        <div className="h-16 flex items-center px-6 border-b border-slate-100">
+    <div className={cn("flex h-screen overflow-hidden transition-colors duration-700", isFocusMode ? "bg-slate-950" : "bg-slate-50")}>
+      {/* Skill-Reactive Style Injection */}
+      {skillThemeStyle && <style>{skillThemeStyle}</style>}
+      
+      {/* Sidebar */}
+      <aside className={cn(
+        "bg-white border-r border-slate-200 flex flex-col z-20 transition-all duration-500",
+        isFocusMode ? "w-0 -ml-64 opacity-0 overflow-hidden" : "w-64 ml-0 opacity-100"
+      )}>
+        <div className="h-16 flex items-center px-6 border-b border-slate-100 flex-shrink-0 bg-white">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shadow-sm">
               <Bot className="w-5 h-5 text-white" />
@@ -236,10 +336,10 @@ export default function DashboardLayout() {
         </div>
         
         <nav className="flex-1 overflow-y-auto py-4 px-4 space-y-1.5 scrollbar-thin scrollbar-thumb-slate-200">
-          {sidebarItems.map((item) => {
+          {getSidebarItems(user?.careerPath || 'software_engineering').map((item) => {
             if (item.children) {
-              const isOpen = openMenus[item.name];
-              const toggleMenu = () => setOpenMenus(prev => ({ ...prev, [item.name]: !prev[item.name] }));
+              const isOpen = expandedMenus[item.name];
+              const toggleMenu = () => setExpandedMenus(prev => ({ ...prev, [item.name]: !prev[item.name] }));
               
               return (
                 <div key={item.name} className="space-y-1">
@@ -343,19 +443,29 @@ export default function DashboardLayout() {
       </aside>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col min-w-0 bg-slate-50 relative">
+      <div className={cn("flex-1 flex flex-col min-w-0 relative transition-colors duration-700", isFocusMode ? "bg-slate-950" : "bg-slate-50")}>
         {/* Topbar */}
-        <header className="h-16 border-b border-slate-200 flex items-center justify-between px-6 z-10 bg-white/80 backdrop-blur-md shadow-sm sticky top-0">
+        <header className={cn(
+          "h-16 border-b flex items-center justify-between px-6 z-10 backdrop-blur-md shadow-sm sticky top-0 transition-colors duration-500",
+          isFocusMode ? "bg-slate-950/80 border-slate-800" : "bg-white/80 border-slate-200"
+        )}>
           <div className="flex-1 max-w-xl flex items-center">
             <div className="relative w-full">
-              <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+              <Search className={cn("absolute left-3 top-2.5 h-4 w-4", isFocusMode ? "text-slate-500" : "text-slate-400")} />
               <Input 
                 type="text" 
                 placeholder="Search anything (Cmd+K)..." 
-                className="w-full pl-9 bg-slate-100/50 border-slate-200 text-slate-900 placeholder:text-slate-400 focus-visible:ring-primary h-10 rounded-xl font-medium shadow-sm"
+                className={cn(
+                  "w-full pl-9 h-10 rounded-xl font-medium shadow-sm transition-colors",
+                  isFocusMode 
+                    ? "bg-slate-900 border-slate-800 text-slate-200 placeholder:text-slate-600 focus-visible:ring-emerald-500" 
+                    : "bg-slate-100/50 border-slate-200 text-slate-900 placeholder:text-slate-400 focus-visible:ring-primary"
+                )}
               />
             </div>
           </div>
+
+
           <div className="flex items-center gap-3 ml-4">
             {/* Career Path Selector */}
             <DropdownMenu>
@@ -388,9 +498,10 @@ export default function DashboardLayout() {
               </DropdownMenuContent>
             </DropdownMenu>
 
-            <Button variant="ghost" size="icon" className="text-slate-500 hover:text-primary hover:bg-primary/10 rounded-xl">
-              <Bell className="w-5 h-5" />
-            </Button>
+
+              <Button variant="ghost" size="icon" className={cn("rounded-xl", isFocusMode ? "text-slate-400 hover:text-slate-200 hover:bg-slate-800" : "text-slate-500 hover:text-primary hover:bg-primary/10")}>
+                <Bell className="w-5 h-5" />
+              </Button>
           </div>
         </header>
 

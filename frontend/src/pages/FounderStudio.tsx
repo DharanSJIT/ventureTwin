@@ -24,7 +24,7 @@ const fallbackCompetitorData = [
   { name: 'New Entrants', score: 65, fill: '#cbd5e1' },
 ];
 
-export default function Startup() {
+export default function FounderStudio() {
   const token = useAuthStore((state) => state.user?.token);
   const [idea, setIdea] = useState("");
   const [blueprints, setBlueprints] = useState<any[]>([]);

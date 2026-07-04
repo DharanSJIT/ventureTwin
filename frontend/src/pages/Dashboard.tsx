@@ -153,7 +153,18 @@ const PATH_CONFIGS: Record<string, any> = {
       { title: "Next Milestone", icon: Target, color: "text-blue-600", bg: "bg-blue-50", text: "You're 2 PRs away from achieving the 'Open Source Contributor' badge." }
     ],
     heatmapTitle: "Commit History",
-    timelineTitles: ["Code Pushed to Prod", "PR Approved", "Critical Bug Fixed", "Repo Initialized"]
+    timelineTitles: ["Code Pushed to Prod", "PR Approved", "Critical Bug Fixed", "Repo Initialized"],
+    timelineSubtitles: [
+      "Successfully deployed auth-microservice v1.2",
+      "Lead engineer approved your PR #42",
+      "Resolved memory leak in worker thread",
+      "Created initial boilerplate and CI/CD config"
+    ],
+    notifications: [
+      { title: "Build Failed", time: "10m ago", subtitle: "CI/CD pipeline failed on main branch.", icon: AlertTriangle },
+      { title: "PR Merged", time: "2h ago", subtitle: "Your PR 'Fix: memory leak' was merged.", icon: CheckCircle2 },
+      { title: "New Issue", time: "5h ago", subtitle: "User reported a bug in the payment flow.", icon: Bug }
+    ]
   },
   startup_founder: {
     welcome: "A real-time view of your startup's growth, revenue, and runway.",
@@ -185,7 +196,18 @@ const PATH_CONFIGS: Record<string, any> = {
       { title: "Fundraising Prep", icon: Presentation, color: "text-indigo-600", bg: "bg-indigo-50", text: "You have 3 VC meetings next week. Review your Cohort Analysis slides." }
     ],
     heatmapTitle: "Customer Discovery Calls",
-    timelineTitles: ["Seed Round Closed", "1,000th User Signed Up", "Launched Beta", "Incorporated C-Corp"]
+    timelineTitles: ["Seed Round Closed", "1,000th User Signed Up", "Launched Beta", "Incorporated C-Corp"],
+    timelineSubtitles: [
+      "Raised $500k from Y Combinator & Angels",
+      "Hit major milestone in organic growth",
+      "Successfully launched MVP to waitlist",
+      "Filed legal documents in Delaware"
+    ],
+    notifications: [
+      { title: "New Stripe Charge", time: "5m ago", subtitle: "User subscribed to Pro Plan ($29/mo).", icon: Banknote },
+      { title: "Meeting Reminder", time: "1h ago", subtitle: "VC pitch with Sequoia at 2PM EST.", icon: Users },
+      { title: "Server Alert", time: "4h ago", subtitle: "Database CPU crossed 80% threshold.", icon: Activity }
+    ]
   },
   product_design: {
     welcome: "A real-time view of your design iterations and user testing.",
@@ -217,7 +239,18 @@ const PATH_CONFIGS: Record<string, any> = {
       { title: "Portfolio Ready", icon: Sparkles, color: "text-fuchsia-600", bg: "bg-fuchsia-50", text: "Your 'FinTech App' case study has enough data to be published to your portfolio." }
     ],
     heatmapTitle: "Figma Activity",
-    timelineTitles: ["Design System Published", "Usability Testing Finished", "V1 Wireframes Done", "User Personas Created"]
+    timelineTitles: ["Design System Published", "Usability Testing Finished", "V1 Wireframes Done", "User Personas Created"],
+    timelineSubtitles: [
+      "Exported core components to React library",
+      "Completed 5 user interviews on Maze",
+      "Finalized low-fidelity layout for mobile",
+      "Identified target demographics and goals"
+    ],
+    notifications: [
+      { title: "Figma Comment", time: "2m ago", subtitle: "Dev left a comment on 'Checkout Flow'.", icon: PenTool },
+      { title: "Asset Exported", time: "45m ago", subtitle: "12 SVG icons exported to /assets.", icon: Sparkles },
+      { title: "Usability Test", time: "2h ago", subtitle: "New recording available in Hotjar.", icon: Activity }
+    ]
   },
   data_science: {
     welcome: "A real-time view of your model training, datasets, and accuracy.",
@@ -249,7 +282,18 @@ const PATH_CONFIGS: Record<string, any> = {
       { title: "Kaggle Momentum", icon: Trophy, color: "text-amber-600", bg: "bg-amber-50", text: "You moved up 200 spots in the Titanic dataset competition. Keep tuning hyperparameters!" }
     ],
     heatmapTitle: "Jupyter Notebook Activity",
-    timelineTitles: ["Model Deployed via API", "94% Accuracy Reached", "Data Cleaned & Scaled", "Dataset Downloaded"]
+    timelineTitles: ["Model Deployed via API", "94% Accuracy Reached", "Data Cleaned & Scaled", "Dataset Downloaded"],
+    timelineSubtitles: [
+      "Served XGBoost model via FastAPI",
+      "Hit target accuracy on validation set",
+      "Handled nulls and applied MinMax scaling",
+      "Imported 1.2M rows from AWS S3"
+    ],
+    notifications: [
+      { title: "Training Complete", time: "Just now", subtitle: "ResNet50 finished 100 epochs.", icon: BrainCircuit },
+      { title: "GPU Throttling", time: "15m ago", subtitle: "Cluster #4 running at 98% capacity.", icon: AlertTriangle },
+      { title: "Data Pipeline", time: "4h ago", subtitle: "Airflow DAG 'daily_etl' succeeded.", icon: Database }
+    ]
   }
 };
 
@@ -424,10 +468,15 @@ export default function Dashboard() {
                <div className="h-64 bg-slate-100/50 animate-pulse rounded-lg" />
             ) : (
               <div className="pl-2 mt-2">
-                <TimelineItem active={true} title={config.timelineTitles[0]} date="Today" subtitle="Latest milestone reached in your career path." />
-                <TimelineItem active={false} title={config.timelineTitles[1]} date="Last Week" subtitle="Consistent progress over time." />
-                <TimelineItem active={false} title={config.timelineTitles[2]} date="Last Month" subtitle="Major achievement unlocked." />
-                <TimelineItem active={false} title={config.timelineTitles[3]} date="Start" subtitle="When you started this journey." />
+                {config.timelineTitles.map((title: string, index: number) => (
+                  <TimelineItem 
+                    key={index}
+                    active={index === 0} 
+                    title={title} 
+                    date={index === 0 ? "Today" : index === 1 ? "Last Week" : index === 2 ? "Last Month" : "Start"} 
+                    subtitle={config.timelineSubtitles[index]} 
+                  />
+                ))}
               </div>
             )}
           </CardContent>
@@ -445,9 +494,15 @@ export default function Dashboard() {
                <div className="h-64 bg-slate-100/50 animate-pulse rounded-lg mx-3" />
             ) : (
               <div className="space-y-1">
-                <NotificationItem icon={Sparkles} title="New AI insight" time="1h ago" subtitle={`Agent generated new advice for your ${currentPath.replace('_', ' ')} path.`} />
-                <NotificationItem icon={Activity} title="Streak maintained" time="3h ago" subtitle="You logged in 5 days in a row!" />
-                <NotificationItem icon={BrainCircuit} title="System update" time="1d ago" subtitle="VentureTwin AI is now fully stateful." />
+                {config.notifications.map((notif: any, i: number) => (
+                  <NotificationItem 
+                    key={i}
+                    icon={notif.icon} 
+                    title={notif.title} 
+                    time={notif.time} 
+                    subtitle={notif.subtitle} 
+                  />
+                ))}
                 {projectsCount > 0 && <NotificationItem icon={FolderKanban} title="Project indexed" time="2d ago" subtitle="Your portfolio has been synced." />}
               </div>
             )}

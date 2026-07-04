@@ -169,13 +169,18 @@ export default function AIAssistant() {
 
               {/* Messages */}
               <div className="flex-1 p-4 overflow-y-auto bg-slate-50 space-y-4">
-                {chatHistory.map((msg, i) => (
-                  <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-[85%] rounded-2xl px-4 py-2 text-sm shadow-sm ${msg.role === 'user' ? 'bg-primary text-primary-foreground rounded-br-sm' : 'bg-white text-slate-800 border border-slate-100 rounded-bl-sm'}`}>
-                      {msg.text}
+                {chatHistory.map((msg, i) => {
+                  const cleanText = msg.text.replace(/<function>[\s\S]*?<\/function>/g, '').trim();
+                  if (!cleanText) return null; // Don't render empty bubbles
+                  
+                  return (
+                    <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                      <div className={`max-w-[85%] rounded-2xl px-4 py-2 text-sm shadow-sm ${msg.role === 'user' ? 'bg-primary text-primary-foreground rounded-br-sm' : 'bg-white text-slate-800 border border-slate-100 rounded-bl-sm'}`}>
+                        {cleanText}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
                 {isSending && (
                   <div className="flex justify-start">
                     <div className="bg-white border border-slate-100 rounded-2xl rounded-bl-sm px-4 py-3 flex gap-1">

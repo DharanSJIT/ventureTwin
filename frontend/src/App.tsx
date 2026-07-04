@@ -3,7 +3,7 @@ import DashboardLayout from './layouts/DashboardLayout';
 import Dashboard from './pages/Dashboard';
 import Projects from './pages/Projects';
 import Career from './pages/Career';
-import Startup from './pages/Startup';
+import StudioRouter from './pages/StudioRouter';
 import Learning from './pages/Learning';
 import Analytics from './pages/Analytics';
 import Decisions from './pages/Decisions';
@@ -67,7 +67,7 @@ function App() {
           
           {/* Legacy links that might still be active in some places */}
           <Route path="/career" element={<Career />} />
-          <Route path="/startup" element={<Startup />} />
+          <Route path="/startup" element={<StudioRouter />} />
         </Route>
         
         {/* Fallback */}
