@@ -124,7 +124,7 @@ export default function DashboardLayout() {
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator className="bg-slate-100" />
-              <DropdownMenuItem className="cursor-pointer hover:bg-slate-50 focus:bg-slate-50 rounded-lg">
+              <DropdownMenuItem className="cursor-pointer hover:bg-slate-50 focus:bg-slate-50 rounded-lg" onClick={() => navigate('/settings')}>
                 <Settings className="mr-2 h-4 w-4" />
                 <span className="font-medium">Account settings</span>
               </DropdownMenuItem>
