@@ -16,15 +16,18 @@ import {
   Bell,
   Bot,
   LogOut,
-  FileText
+  FileText,
+  Loader2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useAuthStore } from '../store/authStore';
+import { useAiStore } from '../store/aiStore';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -50,14 +53,74 @@ const sidebarItems = [
   { name: 'Settings', path: '/settings', icon: Settings },
 ];
 
+function DynamicUIEngine({ uiState }: { uiState: any }) {
+  if (!uiState) return null;
+
+  if (uiState.action === 'SHOW_ALERT') {
+    return (
+      <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-xl mt-4 mb-2 shadow-sm animate-in fade-in zoom-in duration-300">
+        <h4 className="font-bold">{uiState.payload.title}</h4>
+        <p className="text-sm">{uiState.payload.message}</p>
+      </div>
+    );
+  }
+
+  if (uiState.action === 'ADD_SKILL') {
+    return (
+      <div className="bg-green-50 border border-green-200 text-green-700 p-4 rounded-xl mt-4 mb-2 shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-300">
+        <h4 className="font-bold flex items-center gap-2"><Crosshair className="w-4 h-4"/> Skills Added Successfully!</h4>
+        <div className="flex flex-wrap gap-2 mt-2">
+          {uiState.payload.skills?.map((skill: string) => (
+            <span key={skill} className="bg-green-100 px-2 py-1 rounded-md text-xs font-bold shadow-sm">{skill}</span>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (uiState.action === 'RENDER_CHART') {
+    const COLORS = ['#2563eb', '#3b82f6', '#60a5fa', '#93c5fd'];
+    return (
+      <div className="bg-white border border-slate-200 p-4 rounded-xl mt-4 mb-2 shadow-sm animate-in fade-in zoom-in duration-300 h-64">
+        <h4 className="font-bold text-slate-800 text-sm mb-2 text-center">Skill Distribution</h4>
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie
+              data={uiState.payload.data || [{name: 'HTML', value: 40}, {name: 'CSS', value: 30}, {name: 'JS', value: 30}]}
+              cx="50%"
+              cy="50%"
+              innerRadius={40}
+              outerRadius={60}
+              paddingAngle={5}
+              dataKey="value"
+            >
+              {(uiState.payload.data || [1,2,3]).map((entry: any, index: number) => (
+                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+              ))}
+            </Pie>
+            <Tooltip />
+          </PieChart>
+        </ResponsiveContainer>
+      </div>
+    );
+  }
+
+  return null;
+}
+
 export default function DashboardLayout() {
   const location = useLocation();
   const navigate = useNavigate();
-  const [isAiOpen, setIsAiOpen] = useState(false);
   
   // Dynamic user data
   const user = useAuthStore((state) => state.user);
+  const token = useAuthStore((state) => state.user?.token);
   const logout = useAuthStore((state) => state.logout);
+  
+  // AI Store
+  const { messages, isThinking, isOpen: isAiOpen, setIsOpen: setIsAiOpen, addMessage, setThinking, uiState, setUiState } = useAiStore();
+  const [inputValue, setInputValue] = useState('');
+  const chatEndRef = useRef<HTMLDivElement>(null);
   
   const userName = user?.name || 'Guest User';
   const userPlan = 'Free Plan';
@@ -66,6 +129,48 @@ export default function DashboardLayout() {
   const handleLogout = () => {
     logout();
     navigate('/login');
+  };
+
+  const scrollToBottom = () => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, isThinking, uiState]);
+
+  const handleSendMessage = async () => {
+    if (!inputValue.trim()) return;
+
+    const userMsg = inputValue.trim();
+    setInputValue('');
+    addMessage({ id: Date.now().toString(), role: 'user', text: userMsg });
+    setThinking(true);
+    setUiState(null); // Clear previous UI state on new request
+
+    try {
+      const res = await fetch('http://localhost:3000/api/ai/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ message: userMsg })
+      });
+
+      const data = await res.json();
+      
+      if (data.action) {
+        setUiState({ action: data.action, payload: data.payload });
+      }
+
+      addMessage({ id: (Date.now() + 1).toString(), role: 'model', text: data.message });
+    } catch (error) {
+      console.error('Chat error:', error);
+      addMessage({ id: (Date.now() + 1).toString(), role: 'model', text: 'Sorry, I encountered an error connecting to my core systems.' });
+    } finally {
+      setThinking(false);
+    }
   };
 
   return (
@@ -225,16 +330,48 @@ export default function DashboardLayout() {
                 </div>
                 <div className="flex-1 p-5 overflow-y-auto space-y-4 bg-slate-50/50">
                   <div className="bg-white p-4 rounded-2xl rounded-tl-sm shadow-sm text-sm text-slate-700 max-w-[85%] border border-slate-100 font-medium leading-relaxed">
-                    Hello {userName}! 👋<br/><br/>I'm your Digital Twin AI. I remember all your goals, skills, and projects. How can I help you today?
+                    Hello {userName}! 👋<br/><br/>I'm your Digital Twin AI. I can dynamically update your resume, render charts, and answer questions. Try asking: <br/><b>"Add HTML and CSS to my skills"</b> or <b>"Show me a pie chart"</b>.
                   </div>
+                  
+                  {messages.map((msg) => (
+                    <div key={msg.id} className={cn("flex w-full", msg.role === 'user' ? "justify-end" : "justify-start")}>
+                      <div className={cn(
+                        "p-4 rounded-2xl shadow-sm text-sm font-medium leading-relaxed max-w-[85%]",
+                        msg.role === 'user' 
+                          ? "bg-primary text-white rounded-tr-sm" 
+                          : "bg-white text-slate-700 border border-slate-100 rounded-tl-sm"
+                      )}>
+                        {msg.text}
+                      </div>
+                    </div>
+                  ))}
+
+                  {isThinking && (
+                    <div className="bg-white p-4 rounded-2xl rounded-tl-sm shadow-sm text-sm text-slate-500 max-w-[85%] border border-slate-100 font-medium flex items-center gap-2">
+                      <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                      Thinking...
+                    </div>
+                  )}
+
+                  <DynamicUIEngine uiState={uiState} />
+                  
+                  <div ref={chatEndRef} />
                 </div>
                 <div className="p-4 bg-white border-t border-slate-100">
                   <div className="relative">
                     <Input 
+                      value={inputValue}
+                      onChange={(e) => setInputValue(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
                       placeholder="Ask me anything..." 
                       className="pr-12 bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-400 focus-visible:ring-primary rounded-xl h-12 shadow-sm font-medium"
                     />
-                    <Button size="icon" className="absolute right-1.5 top-1.5 h-9 w-9 bg-primary hover:bg-blue-700 rounded-lg text-white shadow-sm">
+                    <Button 
+                      onClick={handleSendMessage}
+                      disabled={isThinking || !inputValue.trim()}
+                      size="icon" 
+                      className="absolute right-1.5 top-1.5 h-9 w-9 bg-primary hover:bg-blue-700 rounded-lg text-white shadow-sm disabled:opacity-50"
+                    >
                       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
                     </Button>
                   </div>

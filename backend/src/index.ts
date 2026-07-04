@@ -16,9 +16,12 @@ const port = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
+import aiRoutes from './routes/aiRoutes';
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/ai', aiRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'VentureTwin API running on MongoDB' });

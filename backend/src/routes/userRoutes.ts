@@ -5,6 +5,8 @@ import cloudinary from '../config/cloudinary';
 import { protect } from '../middleware/authMiddleware';
 import User from '../models/User';
 
+const pdfParse = require('pdf-parse');
+
 const router = express.Router();
 
 // Multer instances for different storages
@@ -40,7 +42,7 @@ router.post('/avatar', protect, avatarUpload.single('image'), async (req: Reques
 });
 
 // POST /api/users/resume/file
-// Upload PDF resume to Cloudinary and save URL to User
+// Upload PDF resume to Cloudinary, extract text, and save both to User
 router.post('/resume/file', protect, resumeUpload.single('resume'), async (req: Request | any, res: Response): Promise<void> => {
   try {
     if (!req.file) {
@@ -54,7 +56,26 @@ router.post('/resume/file', protect, resumeUpload.single('resume'), async (req: 
       return;
     }
 
-    user.resumeUrl = req.file.path; // Cloudinary URL
+    const cloudinaryUrl = req.file.path; // Cloudinary URL
+    user.resumeUrl = cloudinaryUrl;
+
+    // --- NEW: PDF Parsing Logic ---
+    try {
+      // Fetch the PDF from Cloudinary URL
+      const response = await fetch(cloudinaryUrl);
+      const arrayBuffer = await response.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+
+      // Extract text from the PDF
+      const pdfData = await pdfParse(buffer);
+      user.resumeText = pdfData.text;
+    } catch (parseError) {
+      console.error('Error parsing PDF:', parseError);
+      // We don't fail the upload if parsing fails, but we log it
+      user.resumeText = 'Error extracting text from PDF';
+    }
+    // ------------------------------
+
     await user.save();
 
     res.json({ 

@@ -26,6 +26,10 @@ const userSchema = new mongoose.Schema({
   resumeText: {
     type: String,
     default: '',
+  },
+  skills: {
+    type: [String],
+    default: [],
   }
 }, { timestamps: true });
 
