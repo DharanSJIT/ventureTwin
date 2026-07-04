@@ -39,7 +39,8 @@ const userSchema = new mongoose.Schema({
   projects: [{
     title: { type: String, required: true },
     description: { type: String, default: '' },
-    technologies: [{ type: String }]
+    technologies: [{ type: String }],
+    date: { type: String, default: '' }
   }],
   certifications: [{
     name: { type: String, required: true },
@@ -98,6 +99,23 @@ const userSchema = new mongoose.Schema({
       name: { type: String },
       progress: { type: Number, default: 0 }
     }],
+    createdAt: { type: Date, default: Date.now }
+  }],
+  decisions: [{
+    dilemma: { type: String, required: true },
+    pros: [{ type: String }],
+    cons: [{ type: String }],
+    recommendation: { type: String, default: '' },
+    createdAt: { type: Date, default: Date.now }
+  }],
+  opportunities: [{
+    role: { type: String, required: true },
+    company: { type: String, default: 'Matching Network' },
+    type: { type: String, default: 'Full-time' },
+    salary: { type: String, default: 'Market Rate' },
+    matchReason: { type: String, default: '' },
+    matchScore: { type: Number, default: 85 },
+    url: { type: String, default: '#' },
     createdAt: { type: Date, default: Date.now }
   }]
 }, { timestamps: true });

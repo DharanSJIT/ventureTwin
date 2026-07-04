@@ -662,4 +662,219 @@ router.delete('/learning/roadmaps/:index', protect, async (req: Request | any, r
   }
 });
 
+// ==============================
+// DECISIONS API
+// ==============================
+
+// GET /api/users/decisions
+router.get('/decisions', protect, async (req: Request | any, res: Response): Promise<void> => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      res.status(404).json({ message: 'User not found' });
+      return;
+    }
+    res.json({ decisions: (user as any).decisions || [] });
+  } catch (error) {
+    res.status(500).json({ message: 'Server Error' });
+  }
+});
+
+// POST /api/users/decisions/analyze
+router.post('/decisions/analyze', protect, async (req: Request | any, res: Response): Promise<void> => {
+  try {
+    const { dilemma } = req.body;
+    if (!dilemma) {
+      res.status(400).json({ message: 'Please provide a dilemma' });
+      return;
+    }
+
+    const prompt = `You are a Career/Business Decision Matrix AI. 
+    The user is facing this dilemma: "${dilemma}".
+    Please analyze this dilemma objectively. 
+    Output exactly in this JSON format:
+    {
+      "dilemma": "${dilemma}",
+      "pros": ["pro point 1", "pro point 2", "pro point 3"],
+      "cons": ["con point 1", "con point 2", "con point 3"],
+      "recommendation": "Your final verdict/recommendation on what they should do"
+    }
+    Return purely valid JSON without markdown formatting or backticks.`;
+
+    const keysCount = Math.max(1, (process.env.GEMINI_API_KEY || '').split(',').length);
+    let response: any;
+    let lastError: any;
+    let generatedText = '';
+
+    for (let attempt = 0; attempt < keysCount; attempt++) {
+      try {
+        const ai = getAi();
+        response = await ai.models.generateContent({
+          model: 'gemini-2.5-flash',
+          contents: prompt,
+          config: { responseMimeType: 'application/json' }
+        });
+        generatedText = response?.text || '';
+        break;
+      } catch (err: any) {
+        lastError = err;
+        if (err?.status === 429 || err?.status === 503 || (err?.message && (err.message.includes('429') || err.message.includes('503'))) || (err?.message && err.message.includes('quota'))) continue;
+        throw err;
+      }
+    }
+
+    if (!generatedText) {
+      if (process.env.GROQ_API_KEY) {
+        const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+        const groqResponse = await groq.chat.completions.create({
+          model: 'llama-3.3-70b-versatile',
+          messages: [{ role: 'user', content: prompt }],
+          response_format: { type: "json_object" }
+        });
+        generatedText = groqResponse.choices[0]?.message?.content || '{}';
+      } else {
+        throw lastError;
+      }
+    }
+
+    generatedText = generatedText.replace(/```json/g, '').replace(/```/g, '').trim();
+    const firstBrace = generatedText.indexOf('{');
+    const lastBrace = generatedText.lastIndexOf('}');
+    if (firstBrace !== -1 && lastBrace !== -1) generatedText = generatedText.substring(firstBrace, lastBrace + 1);
+
+    const decisionData = JSON.parse(generatedText);
+
+    const user = await User.findById(req.user._id) as any;
+    user.decisions.push(decisionData);
+    await user.save();
+
+    res.json(user.decisions);
+  } catch (error) {
+    console.error('Decision Analyze Error:', error);
+    res.status(500).json({ message: 'Error analyzing decision' });
+  }
+});
+
+// DELETE /api/users/decisions/:index
+router.delete('/decisions/:index', protect, async (req: Request | any, res: Response): Promise<void> => {
+  try {
+    const user = await User.findById(req.user._id) as any;
+    user.decisions.splice(Number(req.params.index), 1);
+    await user.save();
+    res.json(user.decisions);
+  } catch (error) {
+    res.status(500).json({ message: 'Error deleting decision' });
+  }
+});
+
+
+// ==============================
+// OPPORTUNITIES API
+// ==============================
+
+// GET /api/users/opportunities
+router.get('/opportunities', protect, async (req: Request | any, res: Response): Promise<void> => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      res.status(404).json({ message: 'User not found' });
+      return;
+    }
+    res.json({ opportunities: (user as any).opportunities || [] });
+  } catch (error) {
+    res.status(500).json({ message: 'Server Error' });
+  }
+});
+
+// POST /api/users/opportunities/match
+router.post('/opportunities/match', protect, async (req: Request | any, res: Response): Promise<void> => {
+  try {
+    const user = await User.findById(req.user._id) as any;
+    const skills = user.skills?.join(', ') || 'General Knowledge';
+    const projects = user.projects?.map((p:any) => p.title).join(', ') || 'No projects';
+
+    const prompt = `You are an AI Job and Freelance Matchmaker.
+    The user has these skills: ${skills}.
+    The user has built these projects: ${projects}.
+    Generate exactly 4 highly tailored, realistic job roles or freelance opportunities they should apply for based on their profile.
+    Output exactly in this JSON format:
+    {
+      "opportunities": [
+        {
+          "role": "Job Title",
+          "company": "Fictional or Real Company Name",
+          "type": "Full-time, Contract, or Freelance",
+          "salary": "Estimated range e.g. $80k - $120k",
+          "matchReason": "A 1-sentence reason why this is a good match based on their skills",
+          "matchScore": 95,
+          "url": "#"
+        }
+      ]
+    }
+    Return purely valid JSON without markdown formatting or backticks.`;
+
+    const keysCount = Math.max(1, (process.env.GEMINI_API_KEY || '').split(',').length);
+    let response: any;
+    let lastError: any;
+    let generatedText = '';
+
+    for (let attempt = 0; attempt < keysCount; attempt++) {
+      try {
+        const ai = getAi();
+        response = await ai.models.generateContent({
+          model: 'gemini-2.5-flash',
+          contents: prompt,
+          config: { responseMimeType: 'application/json' }
+        });
+        generatedText = response?.text || '';
+        break;
+      } catch (err: any) {
+        lastError = err;
+        if (err?.status === 429 || err?.status === 503 || (err?.message && (err.message.includes('429') || err.message.includes('503'))) || (err?.message && err.message.includes('quota'))) continue;
+        throw err;
+      }
+    }
+
+    if (!generatedText) {
+      if (process.env.GROQ_API_KEY) {
+        const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+        const groqResponse = await groq.chat.completions.create({
+          model: 'llama-3.3-70b-versatile',
+          messages: [{ role: 'user', content: prompt }],
+          response_format: { type: "json_object" }
+        });
+        generatedText = groqResponse.choices[0]?.message?.content || '{}';
+      } else {
+        throw lastError;
+      }
+    }
+
+    generatedText = generatedText.replace(/```json/g, '').replace(/```/g, '').trim();
+    const firstBrace = generatedText.indexOf('{');
+    const lastBrace = generatedText.lastIndexOf('}');
+    if (firstBrace !== -1 && lastBrace !== -1) generatedText = generatedText.substring(firstBrace, lastBrace + 1);
+
+    const matchData = JSON.parse(generatedText);
+    user.opportunities = matchData.opportunities || [];
+    await user.save();
+
+    res.json(user.opportunities);
+  } catch (error) {
+    console.error('Opportunities Match Error:', error);
+    res.status(500).json({ message: 'Error matching opportunities' });
+  }
+});
+
+// DELETE /api/users/opportunities/:index
+router.delete('/opportunities/:index', protect, async (req: Request | any, res: Response): Promise<void> => {
+  try {
+    const user = await User.findById(req.user._id) as any;
+    user.opportunities.splice(Number(req.params.index), 1);
+    await user.save();
+    res.json(user.opportunities);
+  } catch (error) {
+    res.status(500).json({ message: 'Error deleting opportunity' });
+  }
+});
+
 export default router;

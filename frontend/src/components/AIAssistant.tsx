@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuthStore } from '../store/authStore';
-import { Bot, X, Send, Loader2 } from 'lucide-react';
+import { Bot, X, Send, Loader2, Mic, MicOff, Volume2, VolumeX } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,7 +14,73 @@ export default function AIAssistant() {
   const [chatHistory, setChatHistory] = useState<{role: 'ai' | 'user', text: string}[]>([
     { role: 'ai', text: 'Hi! Tell me about a new project, skill, or certification you want to add to your portfolio.' }
   ]);
+  
+  // Voice State
+  const [isListening, setIsListening] = useState(false);
+  const [isVoiceOutputEnabled, setIsVoiceOutputEnabled] = useState(true);
+  const recognitionRef = useRef<any>(null);
+
   const { login, user } = useAuthStore();
+
+  useEffect(() => {
+    // Initialize Web Speech API
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      const recognition = new SpeechRecognition();
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      
+      recognition.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        setMessage(transcript);
+        // Optional: auto-send after voice recognition
+        // handleSendWithText(transcript); 
+      };
+      
+      recognition.onerror = (event: any) => {
+        console.error("Speech recognition error", event.error);
+        setIsListening(false);
+      };
+
+      recognition.onend = () => {
+        setIsListening(false);
+      };
+
+      recognitionRef.current = recognition;
+    }
+  }, []);
+
+  const toggleListening = () => {
+    if (isListening) {
+      recognitionRef.current?.stop();
+      setIsListening(false);
+    } else {
+      try {
+        recognitionRef.current?.start();
+        setIsListening(true);
+      } catch (e) {
+        console.error(e);
+        toast.error("Microphone access denied or unavailable.");
+      }
+    }
+  };
+
+  const speak = (text: string) => {
+    if (!isVoiceOutputEnabled || !('speechSynthesis' in window)) return;
+    
+    // Stop any ongoing speech
+    window.speechSynthesis.cancel();
+    
+    const utterance = new SpeechSynthesisUtterance(text);
+    // Try to find a good English voice
+    const voices = window.speechSynthesis.getVoices();
+    const preferredVoice = voices.find(v => v.lang.startsWith('en') && v.name.includes('Female')) || voices.find(v => v.lang.startsWith('en'));
+    if (preferredVoice) utterance.voice = preferredVoice;
+    
+    utterance.rate = 1.0;
+    utterance.pitch = 1.0;
+    window.speechSynthesis.speak(utterance);
+  };
 
   const handleSend = async () => {
     if (!message.trim()) return;
@@ -42,11 +108,16 @@ export default function AIAssistant() {
           toast.success('Portfolio updated dynamically!');
         }
         setChatHistory(prev => [...prev, { role: 'ai', text: data.message }]);
+        speak(data.message);
       } else {
-        setChatHistory(prev => [...prev, { role: 'ai', text: data.message || 'Error updating portfolio.' }]);
+        const errorMsg = data.message || 'Error updating portfolio.';
+        setChatHistory(prev => [...prev, { role: 'ai', text: errorMsg }]);
+        speak(errorMsg);
       }
     } catch (err) {
-      setChatHistory(prev => [...prev, { role: 'ai', text: 'Network error occurred.' }]);
+      const networkError = 'Network error occurred.';
+      setChatHistory(prev => [...prev, { role: 'ai', text: networkError }]);
+      speak(networkError);
     } finally {
       setIsSending(false);
     }
@@ -80,9 +151,20 @@ export default function AIAssistant() {
                   <Bot className="w-5 h-5" />
                   Portfolio AI Builder
                 </div>
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-primary-foreground hover:bg-primary-foreground/20" onClick={() => setIsOpen(false)}>
-                  <X className="w-5 h-5" />
-                </Button>
+                <div className="flex items-center gap-1">
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className={`h-8 w-8 ${!isVoiceOutputEnabled ? 'text-primary-foreground/50' : 'text-primary-foreground'} hover:bg-primary-foreground/20`}
+                    onClick={() => setIsVoiceOutputEnabled(!isVoiceOutputEnabled)}
+                    title={isVoiceOutputEnabled ? "Mute voice output" : "Enable voice output"}
+                  >
+                    {isVoiceOutputEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-primary-foreground hover:bg-primary-foreground/20" onClick={() => setIsOpen(false)}>
+                    <X className="w-5 h-5" />
+                  </Button>
+                </div>
               </div>
 
               {/* Messages */}
@@ -107,8 +189,19 @@ export default function AIAssistant() {
 
               {/* Input */}
               <div className="p-3 bg-white border-t border-slate-100 flex gap-2">
+                <Button 
+                  onClick={toggleListening} 
+                  type="button" 
+                  variant="ghost" 
+                  size="icon" 
+                  className={`shrink-0 ${isListening ? 'text-red-500 hover:text-red-600 bg-red-50 hover:bg-red-100' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'}`}
+                  title={isListening ? "Stop listening" : "Start speaking"}
+                >
+                  {isListening ? <Mic className="w-4 h-4 animate-pulse" /> : <MicOff className="w-4 h-4" />}
+                </Button>
+                
                 <Input 
-                  placeholder="I just built a new React app..." 
+                  placeholder={isListening ? "Listening..." : "I just built a new React app..."} 
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSend()}

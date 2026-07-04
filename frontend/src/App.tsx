@@ -5,6 +5,10 @@ import Projects from './pages/Projects';
 import Career from './pages/Career';
 import Startup from './pages/Startup';
 import Learning from './pages/Learning';
+import Analytics from './pages/Analytics';
+import Decisions from './pages/Decisions';
+import Opportunities from './pages/Opportunities';
+import Timeline from './pages/Timeline';
 import Settings from './pages/Settings';
 import Resume from './pages/Resume';
 import Placeholder from './pages/Placeholder';
@@ -45,18 +49,18 @@ function App() {
         <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/builder" element={<PortfolioBuilder />} />
-          <Route path="/decisions" element={<Placeholder />} />
+          <Route path="/decisions" element={<Decisions />} />
           <Route path="/skills" element={<Skills />} />
           <Route path="/projects" element={<Projects />} />
           <Route path="/certifications" element={<Certifications />} />
           <Route path="/achievements" element={<Achievements />} />
-          <Route path="/opportunities" element={<Placeholder />} />
+          <Route path="/opportunities" element={<Opportunities />} />
           <Route path="/insights" element={<Insights />} />
-          <Route path="/timeline" element={<Placeholder />} />
+          <Route path="/timeline" element={<Timeline />} />
           <Route path="/applications" element={<Placeholder />} />
           <Route path="/resume" element={<Resume />} />
           <Route path="/learning" element={<Learning />} />
-          <Route path="/analytics" element={<Placeholder />} />
+          <Route path="/analytics" element={<Analytics />} />
           <Route path="/settings" element={<Settings />} />
           
           {/* Legacy links that might still be active in some places */}
