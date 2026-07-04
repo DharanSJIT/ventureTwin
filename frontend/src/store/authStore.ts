@@ -6,6 +6,9 @@ interface User {
   name: string;
   email: string;
   token: string;
+  profileImage?: string;
+  resumeUrl?: string;
+  resumeText?: string;
 }
 
 interface AuthState {

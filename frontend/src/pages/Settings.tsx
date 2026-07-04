@@ -2,14 +2,51 @@ import { useAuthStore } from '../store/authStore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { motion } from 'framer-motion';
-import { User, Mail, Shield, Bell, Key, LogOut } from 'lucide-react';
+import { User, Mail, Shield, Bell, Key, LogOut, Loader2 } from 'lucide-react';
+import { useState, useRef } from 'react';
 
 export default function Settings() {
   const user = useAuthStore((state) => state.user);
+  const login = useAuthStore((state) => state.login);
   const logout = useAuthStore((state) => state.logout);
   const userInitials = user?.name ? user.name.substring(0, 2).toUpperCase() : 'GU';
+  
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    const formData = new FormData();
+    formData.append('image', file);
+
+    try {
+      const response = await fetch('http://localhost:3000/api/users/avatar', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${user?.token}`
+        },
+        body: formData
+      });
+
+      const data = await response.json();
+      if (response.ok && user) {
+        // Update global state with new profile image URL
+        login({ ...user, profileImage: data.profileImage });
+      } else {
+        alert(data.message || 'Upload failed');
+      }
+    } catch (error) {
+      console.error('Error uploading avatar:', error);
+      alert('An error occurred during upload');
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   return (
     <div className="max-w-4xl space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -45,12 +82,29 @@ export default function Settings() {
             <CardContent className="p-6 space-y-6">
               <div className="flex items-center gap-6">
                 <Avatar className="h-24 w-24 border border-slate-200 shadow-sm">
+                  <AvatarImage src={user?.profileImage || ""} className="object-cover" />
                   <AvatarFallback className="bg-primary/10 text-primary text-2xl font-bold">
                     {userInitials}
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <Button variant="outline" className="mb-2 border-slate-200">Change Avatar</Button>
+                  <input 
+                    type="file" 
+                    accept="image/*" 
+                    className="hidden" 
+                    ref={fileInputRef} 
+                    onChange={handleAvatarUpload} 
+                    disabled={isUploading}
+                  />
+                  <Button 
+                    variant="outline" 
+                    className="mb-2 border-slate-200"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploading}
+                  >
+                    {isUploading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                    Change Avatar
+                  </Button>
                   <p className="text-xs text-slate-500">JPG, GIF or PNG. Max size of 800K</p>
                 </div>
               </div>

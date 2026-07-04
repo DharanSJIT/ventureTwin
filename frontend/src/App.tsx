@@ -6,6 +6,7 @@ import Career from './pages/Career';
 import Startup from './pages/Startup';
 import Learning from './pages/Learning';
 import Settings from './pages/Settings';
+import Resume from './pages/Resume';
 import Placeholder from './pages/Placeholder';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
@@ -40,6 +41,7 @@ function App() {
           <Route path="/timeline" element={<Placeholder />} />
           <Route path="/certifications" element={<Placeholder />} />
           <Route path="/applications" element={<Placeholder />} />
+          <Route path="/resume" element={<Resume />} />
           <Route path="/learning" element={<Learning />} />
           <Route path="/analytics" element={<Placeholder />} />
           <Route path="/settings" element={<Settings />} />

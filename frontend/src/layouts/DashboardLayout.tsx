@@ -15,7 +15,8 @@ import {
   Search,
   Bell,
   Bot,
-  LogOut
+  LogOut,
+  FileText
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -43,6 +44,7 @@ const sidebarItems = [
   { name: 'Timeline', path: '/timeline', icon: Map },
   { name: 'Certifications', path: '/certifications', icon: Award },
   { name: 'Applications', path: '/applications', icon: Briefcase },
+  { name: 'Resume', path: '/resume', icon: FileText },
   { name: 'Learning', path: '/learning', icon: GraduationCap },
   { name: 'Analytics', path: '/analytics', icon: LineChart },
   { name: 'Settings', path: '/settings', icon: Settings },
@@ -105,7 +107,7 @@ export default function DashboardLayout() {
             <DropdownMenuTrigger asChild>
               <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-200/50 transition-colors cursor-pointer outline-none bg-white border border-slate-200 shadow-sm">
                 <Avatar className="h-9 w-9 border border-slate-200">
-                  <AvatarImage src="" />
+                  <AvatarImage src={user?.profileImage || ""} />
                   <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">
                     {userInitials}
                   </AvatarFallback>
