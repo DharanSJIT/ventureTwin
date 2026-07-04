@@ -103,12 +103,59 @@ export default function AIAssistant() {
       const data = await res.json();
       
       if (res.ok && user) {
-        if (data.user) {
-          login({ ...user, ...data.user });
-          toast.success('Portfolio updated dynamically!');
+        let updatedUser = data.user;
+        let triggersConfetti = !!updatedUser;
+
+        // Failsafe: If backend returned raw function string instead of processing it
+        console.log("[AI Raw Message]:", data.message);
+        
+        // Let's try a more robust regex that finds any JSON looking thing after update_ui_state
+        const functionMatch = data.message ? data.message.match(/<function>\s*update_ui_state\s*\(?\s*({[\s\S]*?})\s*\)?\s*<\/function>/s) : null;
+        console.log("[Regex Match]:", functionMatch);
+        
+        if (functionMatch && !updatedUser) {
+          try {
+            let jsonStr = functionMatch[1].trim();
+            // In case it's wrapped in backticks
+            if (jsonStr.startsWith('`')) {
+               jsonStr = jsonStr.replace(/^`+|`+$/g, '').trim();
+               if (jsonStr.startsWith('json')) jsonStr = jsonStr.slice(4).trim();
+            }
+            console.log("[Parsed JSON String]:", jsonStr);
+            
+            const payload = JSON.parse(jsonStr);
+            updatedUser = { ...user };
+            
+            if (payload.action === 'ADD_SKILL' && payload.payload?.skills) {
+              updatedUser.skills = [...new Set([...(updatedUser.skills || []), ...payload.payload.skills])];
+              triggersConfetti = true;
+            }
+          } catch (e) {
+            console.error("Failed to parse local function call", e);
+          }
         }
-        setChatHistory(prev => [...prev, { role: 'ai', text: data.message }]);
-        speak(data.message);
+
+        if (updatedUser) {
+          login({ ...user, ...updatedUser });
+          toast.success('Portfolio updated dynamically!');
+          
+          if (triggersConfetti) {
+            // Trigger Level-Up Particles
+            confetti({
+              particleCount: 150,
+              spread: 70,
+              origin: { y: 0.8 },
+              colors: ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6']
+            });
+          }
+        }
+        
+        let finalMessage = (data.message || "").replace(/<function>[\s\S]*?<\/function>/g, '').trim();
+        if (!finalMessage) {
+           finalMessage = "I've successfully updated your portfolio!";
+        }
+        setChatHistory(prev => [...prev, { role: 'ai', text: finalMessage }]);
+        speak(finalMessage);
       } else {
         const errorMsg = data.message || 'Error updating portfolio.';
         setChatHistory(prev => [...prev, { role: 'ai', text: errorMsg }]);
@@ -170,7 +217,8 @@ export default function AIAssistant() {
               {/* Messages */}
               <div className="flex-1 p-4 overflow-y-auto bg-slate-50 space-y-4">
                 {chatHistory.map((msg, i) => {
-                  const cleanText = msg.text.replace(/<function>[\s\S]*?<\/function>/g, '').trim();
+                  const safeText = msg.text || '';
+                  const cleanText = safeText.replace(/<function>[\s\S]*?<\/function>/g, '').trim();
                   if (!cleanText) return null; // Don't render empty bubbles
                   
                   return (

@@ -4,6 +4,9 @@ import { motion } from 'framer-motion';
 import { Crosshair, AlertCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Tooltip } from 'recharts';
+import { ReactFlow, Background, Controls, type Node, type Edge } from '@xyflow/react';
+import '@xyflow/react/dist/style.css';
+import { useMemo } from 'react';
 
 // Helper to categorize skills into domains
 const categorizeSkill = (skill: string) => {
@@ -33,6 +36,75 @@ const generateScore = (str: string) => {
 export default function Skills() {
   const user = useAuthStore((state) => state.user);
   const skills = user?.skills || [];
+  
+  // Create Neural Network Graph Data
+  const { flowNodes, flowEdges } = useMemo(() => {
+    const nodes: Node[] = [];
+    const edges: Edge[] = [];
+    
+    // Central Node (User)
+    nodes.push({
+      id: 'center',
+      position: { x: 0, y: 0 },
+      data: { label: user?.name || 'You' },
+      style: { background: '#1e293b', color: '#fff', border: 'none', borderRadius: '50%', width: 60, height: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }
+    });
+
+    const domains = Array.from(new Set(skills.map(categorizeSkill)));
+    
+    // Place domains in a circle around center
+    const domainRadius = 180;
+    domains.forEach((domain, i) => {
+      const angle = (i / domains.length) * 2 * Math.PI;
+      const dx = Math.cos(angle) * domainRadius;
+      const dy = Math.sin(angle) * domainRadius;
+      
+      const domainId = `domain-${domain}`;
+      nodes.push({
+        id: domainId,
+        position: { x: dx, y: dy },
+        data: { label: domain },
+        style: { background: '#eff6ff', color: '#1e40af', border: '1px solid #bfdbfe', borderRadius: '12px', fontWeight: 'bold', padding: '10px 15px' }
+      });
+      
+      edges.push({
+        id: `edge-center-${domainId}`,
+        source: 'center',
+        target: domainId,
+        animated: true,
+        style: { stroke: '#94a3b8' }
+      });
+
+      // Find skills in this domain
+      const domainSkills = skills.filter(s => categorizeSkill(s) === domain);
+      
+      // Place skills around their domain
+      const skillRadius = 100;
+      domainSkills.forEach((skill, j) => {
+        const sAngle = angle + (j / domainSkills.length) * Math.PI - (Math.PI / 2); // spread in an arc
+        const sx = dx + Math.cos(sAngle) * skillRadius;
+        const sy = dy + Math.sin(sAngle) * skillRadius;
+        
+        const skillId = `skill-${skill}`;
+        nodes.push({
+          id: skillId,
+          position: { x: sx, y: sy },
+          data: { label: skill },
+          style: { background: '#fff', color: '#334155', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '12px', padding: '6px 10px' }
+        });
+        
+        edges.push({
+          id: `edge-${domainId}-${skillId}`,
+          source: domainId,
+          target: skillId,
+          style: { stroke: '#e2e8f0' }
+        });
+      });
+    });
+
+    return { flowNodes: nodes, flowEdges: edges };
+  }, [skills, user]);
+
   
   // Group skills by domain and calculate average score
   const domainScores: Record<string, { total: number; count: number; skills: string[] }> = {};
@@ -126,17 +198,17 @@ export default function Skills() {
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="p-6">
-                <div className="flex flex-wrap gap-3">
-                  {skills.map((skill, index) => (
-                    <span 
-                      key={index} 
-                      className="px-4 py-2 bg-slate-100 text-slate-800 rounded-lg text-sm font-semibold border border-slate-200 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 transition-colors cursor-default shadow-sm"
-                    >
-                      {skill}
-                    </span>
-                  ))}
-                </div>
+              <CardContent className="p-0 h-[400px]">
+                <ReactFlow 
+                  nodes={flowNodes} 
+                  edges={flowEdges} 
+                  fitView 
+                  className="bg-slate-50"
+                  proOptions={{ hideAttribution: true }}
+                >
+                  <Background color="#cbd5e1" gap={16} />
+                  <Controls showInteractive={false} />
+                </ReactFlow>
               </CardContent>
             </Card>
           </motion.div>
