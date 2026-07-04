@@ -61,7 +61,7 @@ const sidebarItems = [
   { name: 'Career Graph', path: '/career-graph', icon: Map },
   { name: 'Insights', path: '/insights', icon: Activity },
   { name: 'Timeline', path: '/timeline', icon: Map },
-  { name: 'Applications', path: '/applications', icon: Briefcase },
+
   { name: 'Resume', path: '/resume', icon: FileText },
   { name: 'Learning', path: '/learning', icon: GraduationCap },
   { name: 'Analytics', path: '/analytics', icon: LineChart },

@@ -3,22 +3,13 @@ import { Badge } from "@/components/ui/badge";
 import { 
   BrainCircuit, TrendingUp, Lightbulb, Target, Briefcase, 
   FolderKanban, Map, Award, Activity, Bell, Rocket, Clock,
-  AlertTriangle, Sparkles, CheckCircle2, Circle, Code, Trophy
+  AlertTriangle, Sparkles, CheckCircle2, Circle, Code, Trophy,
+  Users, Banknote, Presentation, PenTool, Database, Binary, Bug, BarChart3
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { useAuthStore } from '../store/authStore';
-
-const analyticsData = [
-  { name: "Mon", focus: 60, tasks: 10 },
-  { name: "Tue", focus: 78, tasks: 12 },
-  { name: "Wed", focus: 55, tasks: 8 },
-  { name: "Thu", focus: 89, tasks: 15 },
-  { name: "Fri", focus: 75, tasks: 11 },
-  { name: "Sat", focus: 40, tasks: 5 },
-  { name: "Sun", focus: 35, tasks: 4 },
-];
 
 const CircularProgress = ({ value, label, subtitle, colorClass }: { value: number, label: string, subtitle: string, colorClass: string }) => {
   const radius = 32;
@@ -50,14 +41,14 @@ const CircularProgress = ({ value, label, subtitle, colorClass }: { value: numbe
         </div>
         <div className="flex-1 ml-4 text-right">
           <h3 className="text-sm font-semibold text-slate-700">{label}</h3>
-          <p className="text-xs text-green-600 font-medium mt-1">{subtitle}</p>
+          <p className="text-xs text-slate-500 font-medium mt-1">{subtitle}</p>
         </div>
       </Card>
     </motion.div>
   );
 };
 
-const MiniStat = ({ value, label, icon: Icon, colorClass }: any) => (
+const MiniStat = ({ value, label, icon: Icon, colorClass, suffix = "" }: any) => (
   <motion.div whileHover={{ y: -3, boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.05)" }} className="h-full">
     <Card className="border-slate-200 shadow-sm h-full">
       <CardContent className="p-4 flex flex-col justify-between h-full gap-3">
@@ -68,7 +59,7 @@ const MiniStat = ({ value, label, icon: Icon, colorClass }: any) => (
           <span className="text-[10px] font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full">+4%</span>
         </div>
         <div>
-          <div className="text-2xl font-bold text-slate-900 leading-none">{value}</div>
+          <div className="text-2xl font-bold text-slate-900 leading-none">{value}{suffix}</div>
           <p className="text-xs text-slate-500 font-medium mt-1">{label}</p>
         </div>
       </CardContent>
@@ -76,7 +67,7 @@ const MiniStat = ({ value, label, icon: Icon, colorClass }: any) => (
   </motion.div>
 );
 
-const Heatmap = () => {
+const Heatmap = ({ title }: { title: string }) => {
   return (
     <div className="grid grid-cols-[repeat(16,minmax(0,1fr))] gap-1 mt-6">
       {Array.from({ length: 16 * 7 }).map((_, i) => {
@@ -126,6 +117,142 @@ const NotificationItem = ({ title, time, subtitle, icon: Icon }: any) => (
   </div>
 )
 
+// Fallback icon for Layers (since it's not exported above)
+const Layers = Map; 
+
+// Dynamic Configurations based on Career Path
+const PATH_CONFIGS: Record<string, any> = {
+  software_engineering: {
+    welcome: "A real-time view of your engineering metrics and repositories.",
+    circular: [
+      { label: "Algorithm Mastery", subtitle: "LeetCode Stats", color: "stroke-blue-600", baseScore: 82 },
+      { label: "System Design", subtitle: "Architecture", color: "stroke-cyan-500", baseScore: 75 },
+      { label: "Code Quality", subtitle: "Lint & SonarQube", color: "stroke-indigo-500", baseScore: 94 },
+      { label: "Test Coverage", subtitle: "Jest/Cypress", color: "stroke-emerald-500", baseScore: 88 }
+    ],
+    miniStats: [
+      { label: "Lines of Code", icon: Code, color: "bg-blue-500", val: "142", suffix: "k" },
+      { label: "PRs Merged", icon: FolderKanban, color: "bg-indigo-500", val: "128", suffix: "" },
+      { label: "Bug Fixes", icon: Bug, color: "bg-amber-500", val: "84", suffix: "" },
+      { label: "Certificates", icon: Award, color: "bg-emerald-500", val: "3", suffix: "" }
+    ],
+    chart: {
+      title: "GitHub Activity",
+      line1: { key: "commits", color: "#2563eb", name: "Commits" },
+      line2: { key: "lines", color: "#22d3ee", name: "Lines Added" },
+      data: [
+        { name: "Mon", commits: 12, lines: 450 }, { name: "Tue", commits: 24, lines: 1200 },
+        { name: "Wed", commits: 8, lines: 300 }, { name: "Thu", commits: 35, lines: 2100 },
+        { name: "Fri", commits: 18, lines: 800 }, { name: "Sat", commits: 4, lines: 150 },
+        { name: "Sun", commits: 0, lines: 0 }
+      ]
+    },
+    aiInsights: [
+      { title: "Code Quality Alert", icon: AlertTriangle, color: "text-amber-600", bg: "bg-amber-50", text: "Test coverage dropped below 80% in the auth module. Consider adding more Jest unit tests." },
+      { title: "Momentum in React", icon: TrendingUp, color: "text-emerald-600", bg: "bg-emerald-50", text: "Your recent commits show heavy usage of React Hooks. Great job modernizing the codebase!" },
+      { title: "Next Milestone", icon: Target, color: "text-blue-600", bg: "bg-blue-50", text: "You're 2 PRs away from achieving the 'Open Source Contributor' badge." }
+    ],
+    heatmapTitle: "Commit History",
+    timelineTitles: ["Code Pushed to Prod", "PR Approved", "Critical Bug Fixed", "Repo Initialized"]
+  },
+  startup_founder: {
+    welcome: "A real-time view of your startup's growth, revenue, and runway.",
+    circular: [
+      { label: "PMF Score", subtitle: "Product-Market Fit", color: "stroke-emerald-600", baseScore: 68 },
+      { label: "Investor Ready", subtitle: "Pitch Deck & Metrics", color: "stroke-blue-500", baseScore: 85 },
+      { label: "User Growth", subtitle: "WoW Acquisition", color: "stroke-indigo-500", baseScore: 72 },
+      { label: "Team Building", subtitle: "Culture & Hiring", color: "stroke-amber-500", baseScore: 90 }
+    ],
+    miniStats: [
+      { label: "MRR", icon: Banknote, color: "bg-emerald-500", val: "₹12", suffix: "k" },
+      { label: "Active Users", icon: Users, color: "bg-blue-500", val: "4.2", suffix: "k" },
+      { label: "Burn Rate", icon: TrendingUp, color: "bg-rose-500", val: "₹8", suffix: "k" },
+      { label: "Runway", icon: Clock, color: "bg-indigo-500", val: "14", suffix: " mo" }
+    ],
+    chart: {
+      title: "Growth Metrics",
+      line1: { key: "revenue", color: "#10b981", name: "Revenue (₹)" },
+      line2: { key: "users", color: "#3b82f6", name: "Active Users" },
+      data: [
+        { name: "Jan", revenue: 2000, users: 500 }, { name: "Feb", revenue: 4500, users: 1200 },
+        { name: "Mar", revenue: 6000, users: 2100 }, { name: "Apr", revenue: 8500, users: 3200 },
+        { name: "May", revenue: 10500, users: 3800 }, { name: "Jun", revenue: 12000, users: 4200 }
+      ]
+    },
+    aiInsights: [
+      { title: "Runway Warning", icon: AlertTriangle, color: "text-rose-600", bg: "bg-rose-50", text: "Your AWS bill spiked by 30% this month. Consider optimizing cloud costs to extend runway." },
+      { title: "Conversion Spike", icon: TrendingUp, color: "text-emerald-600", bg: "bg-emerald-50", text: "Sign-ups increased by 15% after your recent Product Hunt launch. Capitalize on this momentum!" },
+      { title: "Fundraising Prep", icon: Presentation, color: "text-indigo-600", bg: "bg-indigo-50", text: "You have 3 VC meetings next week. Review your Cohort Analysis slides." }
+    ],
+    heatmapTitle: "Customer Discovery Calls",
+    timelineTitles: ["Seed Round Closed", "1,000th User Signed Up", "Launched Beta", "Incorporated C-Corp"]
+  },
+  product_design: {
+    welcome: "A real-time view of your design iterations and user testing.",
+    circular: [
+      { label: "UI/UX Mastery", subtitle: "Figma & Framer", color: "stroke-fuchsia-500", baseScore: 92 },
+      { label: "Prototyping", subtitle: "Interactions", color: "stroke-pink-500", baseScore: 88 },
+      { label: "User Research", subtitle: "Interviews", color: "stroke-blue-500", baseScore: 78 },
+      { label: "Accessibility", subtitle: "WCAG Compliance", color: "stroke-amber-500", baseScore: 85 }
+    ],
+    miniStats: [
+      { label: "Figma Files", icon: PenTool, color: "bg-fuchsia-500", val: "47", suffix: "" },
+      { label: "Prototypes", icon: Layers, color: "bg-pink-500", val: "12", suffix: "" },
+      { label: "User Tests", icon: Users, color: "bg-blue-500", val: "34", suffix: "" },
+      { label: "Dribbble Views", icon: Activity, color: "bg-rose-500", val: "12", suffix: "k" }
+    ],
+    chart: {
+      title: "Design Iterations",
+      line1: { key: "iterations", color: "#d946ef", name: "Iterations" },
+      line2: { key: "score", color: "#3b82f6", name: "Usability Score" },
+      data: [
+        { name: "V1", iterations: 5, score: 60 }, { name: "V2", iterations: 12, score: 75 },
+        { name: "V3", iterations: 8, score: 82 }, { name: "V4", iterations: 4, score: 89 },
+        { name: "V5", iterations: 2, score: 95 }
+      ]
+    },
+    aiInsights: [
+      { title: "Accessibility Check", icon: AlertTriangle, color: "text-amber-600", bg: "bg-amber-50", text: "Contrast ratio on your primary buttons fails WCAG AA standards. Adjust the hex values." },
+      { title: "Usability Success", icon: TrendingUp, color: "text-emerald-600", bg: "bg-emerald-50", text: "Your latest prototype reduced task completion time by 40%. Great UX improvement!" },
+      { title: "Portfolio Ready", icon: Sparkles, color: "text-fuchsia-600", bg: "bg-fuchsia-50", text: "Your 'FinTech App' case study has enough data to be published to your portfolio." }
+    ],
+    heatmapTitle: "Figma Activity",
+    timelineTitles: ["Design System Published", "Usability Testing Finished", "V1 Wireframes Done", "User Personas Created"]
+  },
+  data_science: {
+    welcome: "A real-time view of your model training, datasets, and accuracy.",
+    circular: [
+      { label: "Machine Learning", subtitle: "Scikit & XGBoost", color: "stroke-emerald-600", baseScore: 89 },
+      { label: "Data Wrangling", subtitle: "Pandas & SQL", color: "stroke-blue-500", baseScore: 95 },
+      { label: "NLP / Vision", subtitle: "PyTorch", color: "stroke-indigo-500", baseScore: 72 },
+      { label: "Statistics", subtitle: "A/B Testing", color: "stroke-rose-500", baseScore: 84 }
+    ],
+    miniStats: [
+      { label: "Models Trained", icon: BrainCircuit, color: "bg-emerald-500", val: "24", suffix: "" },
+      { label: "Datasets", icon: Database, color: "bg-blue-500", val: "18", suffix: "" },
+      { label: "Accuracy", icon: Target, color: "bg-indigo-500", val: "94", suffix: "%" },
+      { label: "Kaggle Rank", icon: Trophy, color: "bg-amber-500", val: "Top 5", suffix: "%" }
+    ],
+    chart: {
+      title: "Model Training",
+      line1: { key: "accuracy", color: "#10b981", name: "Validation Accuracy" },
+      line2: { key: "loss", color: "#ef4444", name: "Training Loss" },
+      data: [
+        { name: "Ep 10", accuracy: 50, loss: 90 }, { name: "Ep 20", accuracy: 65, loss: 70 },
+        { name: "Ep 30", accuracy: 78, loss: 50 }, { name: "Ep 40", accuracy: 85, loss: 30 },
+        { name: "Ep 50", accuracy: 92, loss: 15 }, { name: "Ep 60", accuracy: 94, loss: 10 }
+      ]
+    },
+    aiInsights: [
+      { title: "Overfitting Warning", icon: AlertTriangle, color: "text-rose-600", bg: "bg-rose-50", text: "Your latest Deep Learning model shows signs of overfitting. Consider adding Dropout layers." },
+      { title: "Data Pipeline", icon: Database, color: "text-blue-600", bg: "bg-blue-50", text: "Your SQL query optimization reduced data extraction time by 60 seconds." },
+      { title: "Kaggle Momentum", icon: Trophy, color: "text-amber-600", bg: "bg-amber-50", text: "You moved up 200 spots in the Titanic dataset competition. Keep tuning hyperparameters!" }
+    ],
+    heatmapTitle: "Jupyter Notebook Activity",
+    timelineTitles: ["Model Deployed via API", "94% Accuracy Reached", "Data Cleaned & Scaled", "Dataset Downloaded"]
+  }
+};
+
 export default function Dashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuthStore();
@@ -133,39 +260,23 @@ export default function Dashboard() {
   useEffect(() => {
     const timer = setTimeout(() => setIsLoading(false), 800);
     return () => clearTimeout(timer);
-  }, []);
+  }, [user?.careerPath]); // Re-trigger loading on path change
 
+  const currentPath = user?.careerPath || 'software_engineering';
+  const config = PATH_CONFIGS[currentPath] || PATH_CONFIGS['software_engineering'];
+
+  // Real data integrations where possible
   const projectsCount = user?.projects?.length || 0;
-  const skillsCount = user?.skills?.length || 0;
   const certsCount = user?.certifications?.length || 0;
-  const achievementsCount = user?.achievements?.length || 0;
-
-  // Calculate some dummy scores based on their profile completion
-  const careerScore = Math.min(100, 20 + (projectsCount * 15) + (certsCount * 10));
-  const learningScore = Math.min(100, 30 + (skillsCount * 5));
-  const portfolioScore = Math.min(100, (user?.resumeUrl ? 25 : 0) + (projectsCount > 0 ? 25 : 0) + (skillsCount > 0 ? 25 : 0) + (certsCount > 0 ? 25 : 0));
-
-  const recentActivity = [];
-  if (user?.resumeUrl) recentActivity.push({ action: "Uploaded Resume", target: "PDF parsed successfully", time: "Recently", icon: CheckCircle2, color: "text-green-600", bg: "bg-green-100" });
-  if (projectsCount > 0) recentActivity.push({ action: "Added Project", target: user.projects[user.projects.length - 1].title, time: "Recently", icon: FolderKanban, color: "text-blue-600", bg: "bg-blue-100" });
-  if (certsCount > 0) recentActivity.push({ action: "Added Certification", target: user.certifications[user.certifications.length - 1].name, time: "Recently", icon: Award, color: "text-emerald-600", bg: "bg-emerald-100" });
-  if (skillsCount > 0) recentActivity.push({ action: "Updated Skills", target: `${user.skills[0]} & others`, time: "Recently", icon: Code, color: "text-indigo-600", bg: "bg-indigo-100" });
   
-  if (recentActivity.length === 0) {
-    recentActivity.push({ action: "Account Created", target: "Welcome to VentureTwin!", time: "Recently", icon: Sparkles, color: "text-primary", bg: "bg-blue-100" });
-  }
-
-  const timelineItems = [];
-  if (projectsCount > 0) timelineItems.push({ active: true, title: "Project Built", date: "Recent", subtitle: user.projects[0].title });
-  if (certsCount > 0) timelineItems.push({ active: false, title: "Certification Earned", date: "Past", subtitle: user.certifications[0].name });
-  if (achievementsCount > 0) timelineItems.push({ active: false, title: "Achievement unlocked", date: "Past", subtitle: user.achievements[0].title });
-  timelineItems.push({ active: false, title: "Joined Platform", date: "Past", subtitle: "Started building Digital Twin" });
+  // Mix static config with some real user data boosts
+  const scoreBoost = Math.min(10, projectsCount * 2 + certsCount * 2);
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500 pb-12">
       <div>
         <h1 className="text-3xl font-bold tracking-tight text-slate-900">Welcome, {user?.name?.split(' ')[0] || 'User'}!</h1>
-        <p className="text-slate-500 mt-1">A real-time view of your career, learning, and digital twin.</p>
+        <p className="text-slate-500 mt-1">{config.welcome}</p>
       </div>
 
       {/* Row 1: Circular Progress Scores */}
@@ -177,12 +288,15 @@ export default function Dashboard() {
             </Card>
           ))
         ) : (
-          <>
-            <CircularProgress value={careerScore} label="Career Score" subtitle="Based on profile" colorClass="stroke-blue-600" />
-            <CircularProgress value={learningScore} label="Learning Score" subtitle="Based on skills" colorClass="stroke-cyan-500" />
-            <CircularProgress value={portfolioScore} label="Portfolio Strength" subtitle="Profile completeness" colorClass="stroke-emerald-500" />
-            <CircularProgress value={100} label="AI Sync" subtitle="Digital Twin Active" colorClass="stroke-primary" />
-          </>
+          config.circular.map((circ: any, i: number) => (
+            <CircularProgress 
+              key={i} 
+              value={Math.min(100, circ.baseScore + scoreBoost)} 
+              label={circ.label} 
+              subtitle={circ.subtitle} 
+              colorClass={circ.color} 
+            />
+          ))
         )}
       </div>
 
@@ -195,42 +309,46 @@ export default function Dashboard() {
             </Card>
           ))
         ) : (
-          <>
-            <MiniStat value={projectsCount} label="Projects" icon={FolderKanban} colorClass="bg-indigo-500" />
-            <MiniStat value={skillsCount} label="Skills" icon={Code} colorClass="bg-amber-500" />
-            <MiniStat value={certsCount} label="Certificates" icon={Award} colorClass="bg-emerald-500" />
-            <MiniStat value={achievementsCount} label="Achievements" icon={Trophy} colorClass="bg-fuchsia-500" />
-          </>
+          config.miniStats.map((stat: any, i: number) => (
+            <MiniStat 
+              key={i} 
+              value={stat.val} 
+              suffix={stat.suffix}
+              label={stat.label} 
+              icon={stat.icon} 
+              colorClass={stat.color} 
+            />
+          ))
         )}
       </div>
 
       {/* Row 3: Analytics & Insights */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
-        <Card className="col-span-4 border-slate-200 shadow-sm">
+        <Card className="col-span-4 border-slate-200 shadow-sm flex flex-col">
           <CardHeader className="pb-2">
             <div className="flex justify-between items-center">
-              <CardTitle className="text-base">Weekly Activity</CardTitle>
+              <CardTitle className="text-base">{config.chart.title}</CardTitle>
               <div className="flex gap-4 text-xs font-medium text-slate-500">
-                <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-primary" /> Focus</span>
-                <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-cyan-400" /> Tasks</span>
+                <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full" style={{ backgroundColor: config.chart.line1.color }} /> {config.chart.line1.name}</span>
+                <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full" style={{ backgroundColor: config.chart.line2.color }} /> {config.chart.line2.name}</span>
               </div>
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="flex-1">
             {isLoading ? (
                <div className="h-[250px] w-full bg-slate-100/50 rounded-xl animate-pulse mt-4" />
             ) : (
               <div className="h-[250px] w-full mt-4">
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={analyticsData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <AreaChart data={config.chart.data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                     <defs>
-                      <linearGradient id="colorFocus" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#2563eb" stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor="#2563eb" stopOpacity={0}/>
+                      <linearGradient id="color1" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor={config.chart.line1.color} stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor={config.chart.line1.color} stopOpacity={0}/>
                       </linearGradient>
-                      <linearGradient id="colorTasks" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#22d3ee" stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor="#22d3ee" stopOpacity={0}/>
+                      <linearGradient id="color2" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor={config.chart.line2.color} stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor={config.chart.line2.color} stopOpacity={0}/>
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
@@ -240,8 +358,8 @@ export default function Dashboard() {
                       contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
                       itemStyle={{ fontWeight: 600 }}
                     />
-                    <Area type="monotone" dataKey="focus" stroke="#2563eb" strokeWidth={3} fillOpacity={1} fill="url(#colorFocus)" />
-                    <Area type="monotone" dataKey="tasks" stroke="#22d3ee" strokeWidth={3} fillOpacity={1} fill="url(#colorTasks)" />
+                    <Area type="monotone" dataKey={config.chart.line1.key} stroke={config.chart.line1.color} strokeWidth={3} fillOpacity={1} fill="url(#color1)" />
+                    <Area type="monotone" dataKey={config.chart.line2.key} stroke={config.chart.line2.color} strokeWidth={3} fillOpacity={1} fill="url(#color2)" />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
@@ -252,7 +370,7 @@ export default function Dashboard() {
         <Card className="col-span-3 border-slate-200 shadow-sm flex flex-col">
           <CardHeader className="pb-4 border-b border-slate-100">
             <CardTitle className="text-base flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-primary" /> AI Insights
+              <BrainCircuit className="w-4 h-4 text-primary" /> Specialized Agent Insights
             </CardTitle>
           </CardHeader>
           <CardContent className="flex-1 p-0">
@@ -264,29 +382,15 @@ export default function Dashboard() {
               </div>
             ) : (
               <div className="p-4 space-y-3 h-full flex flex-col justify-between">
-                <div className="bg-emerald-50 border border-emerald-100 p-4 rounded-xl">
-                  <div className="flex items-center gap-2 mb-2">
-                    <TrendingUp className="w-4 h-4 text-emerald-600" />
-                    <h4 className="text-sm font-bold text-emerald-900">Momentum in {user?.skills?.[0] || 'Software'}</h4>
+                {config.aiInsights.map((insight: any, i: number) => (
+                  <div key={i} className={`${insight.bg} border border-slate-100 p-4 rounded-xl`}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <insight.icon className={`w-4 h-4 ${insight.color}`} />
+                      <h4 className={`text-sm font-bold ${insight.color.replace('text-', 'text-').replace('600', '900')}`}>{insight.title}</h4>
+                    </div>
+                    <p className={`text-xs ${insight.color.replace('text-', 'text-').replace('600', '700')} leading-relaxed`}>{insight.text}</p>
                   </div>
-                  <p className="text-xs text-emerald-700 leading-relaxed">Your skill velocity is up! Keep adding projects to strengthen your portfolio.</p>
-                </div>
-
-                <div className="bg-amber-50 border border-amber-100 p-4 rounded-xl">
-                  <div className="flex items-center gap-2 mb-2">
-                    <AlertTriangle className="w-4 h-4 text-amber-600" />
-                    <h4 className="text-sm font-bold text-amber-900">Profile completeness</h4>
-                  </div>
-                  <p className="text-xs text-amber-700 leading-relaxed">Upload a resume or use the AI Assistant to fill out your portfolio fully.</p>
-                </div>
-
-                <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Rocket className="w-4 h-4 text-primary" />
-                    <h4 className="text-sm font-bold text-blue-900">Suggested next step</h4>
-                  </div>
-                  <p className="text-xs text-blue-700 leading-relaxed">Share your portfolio link to start attracting opportunities based on your skills.</p>
-                </div>
+                ))}
               </div>
             )}
           </CardContent>
@@ -298,14 +402,14 @@ export default function Dashboard() {
         <Card className="border-slate-200 shadow-sm">
           <CardHeader className="pb-2 flex flex-row items-center justify-between">
             <CardTitle className="text-base flex items-center gap-2">
-              <Activity className="w-4 h-4 text-slate-500" /> Activity Heatmap
+              <Activity className="w-4 h-4 text-slate-500" /> {config.heatmapTitle}
             </CardTitle>
             <div className="text-[10px] text-slate-400 flex items-center gap-1">
               Less <div className="flex gap-0.5 mx-1"><div className="w-2 h-2 bg-slate-100 rounded-[1px]"/><div className="w-2 h-2 bg-blue-200 rounded-[1px]"/><div className="w-2 h-2 bg-blue-400 rounded-[1px]"/><div className="w-2 h-2 bg-primary rounded-[1px]"/></div> More
             </div>
           </CardHeader>
           <CardContent>
-            {isLoading ? <div className="h-32 bg-slate-100/50 animate-pulse rounded-lg mt-4" /> : <Heatmap />}
+            {isLoading ? <div className="h-32 bg-slate-100/50 animate-pulse rounded-lg mt-4" /> : <Heatmap title={config.heatmapTitle} />}
           </CardContent>
         </Card>
 
@@ -319,10 +423,11 @@ export default function Dashboard() {
             {isLoading ? (
                <div className="h-64 bg-slate-100/50 animate-pulse rounded-lg" />
             ) : (
-              <div className="pl-2">
-                {timelineItems.map((item, i) => (
-                  <TimelineItem key={i} {...item} />
-                ))}
+              <div className="pl-2 mt-2">
+                <TimelineItem active={true} title={config.timelineTitles[0]} date="Today" subtitle="Latest milestone reached in your career path." />
+                <TimelineItem active={false} title={config.timelineTitles[1]} date="Last Week" subtitle="Consistent progress over time." />
+                <TimelineItem active={false} title={config.timelineTitles[2]} date="Last Month" subtitle="Major achievement unlocked." />
+                <TimelineItem active={false} title={config.timelineTitles[3]} date="Start" subtitle="When you started this journey." />
               </div>
             )}
           </CardContent>
@@ -340,47 +445,15 @@ export default function Dashboard() {
                <div className="h-64 bg-slate-100/50 animate-pulse rounded-lg mx-3" />
             ) : (
               <div className="space-y-1">
-                {certsCount > 0 && <NotificationItem icon={Award} title="Certificate tracked" time="Recently" subtitle={`"${user?.certifications[0]?.name}" added.`} />}
-                {projectsCount > 0 && <NotificationItem icon={FolderKanban} title="Project indexed" time="Recently" subtitle={`"${user?.projects[0]?.title}" is live.`} />}
-                <NotificationItem icon={Sparkles} title="New AI insight" time="1h ago" subtitle='Your twin generated 3 new recommendations.' />
-                <NotificationItem icon={BrainCircuit} title="System update" time="3h ago" subtitle='VentureTwin AI is now fully stateful.' />
+                <NotificationItem icon={Sparkles} title="New AI insight" time="1h ago" subtitle={`Agent generated new advice for your ${currentPath.replace('_', ' ')} path.`} />
+                <NotificationItem icon={Activity} title="Streak maintained" time="3h ago" subtitle="You logged in 5 days in a row!" />
+                <NotificationItem icon={BrainCircuit} title="System update" time="1d ago" subtitle="VentureTwin AI is now fully stateful." />
+                {projectsCount > 0 && <NotificationItem icon={FolderKanban} title="Project indexed" time="2d ago" subtitle="Your portfolio has been synced." />}
               </div>
             )}
           </CardContent>
         </Card>
       </div>
-
-      {/* Row 5: Recent Activity */}
-      <Card className="border-slate-200 shadow-sm">
-        <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
-            <Clock className="w-4 h-4 text-slate-500" /> Recent Activity
-          </CardTitle>
-          <CardDescription>A chronological log of your Digital Twin's memories.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="h-32 bg-slate-100/50 animate-pulse rounded-lg" />
-          ) : (
-            <div className="space-y-4">
-              {recentActivity.map((activity, i) => (
-                <div key={i} className="flex items-center gap-4 text-sm p-3 hover:bg-slate-50 rounded-xl transition-colors">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${activity.bg}`}>
-                    <activity.icon className={`w-4 h-4 ${activity.color}`} />
-                  </div>
-                  <div className="flex-1 flex items-center justify-between">
-                    <div>
-                      <span className="text-slate-500 mr-1.5">{activity.action}</span>
-                      <span className="font-semibold text-slate-900">{activity.target}</span>
-                    </div>
-                    <span className="text-slate-400 text-xs font-medium">{activity.time}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
     </div>
   );
 }
