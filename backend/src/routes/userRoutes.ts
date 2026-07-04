@@ -7,10 +7,10 @@ import User from '../models/User';
 import { GoogleGenAI } from '@google/genai';
 
 const pdfParse = require('pdf-parse');
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || 'fake-key-to-allow-init' });
-
+const getAi = () => new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || 'fake-key-to-allow-init' });
 async function extractPortfolioData(resumeText: string) {
   try {
+    const ai = getAi();
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
       contents: `Extract the following portfolio data from the resume. Return ONLY a valid JSON object with the following four keys:
@@ -19,12 +19,23 @@ async function extractPortfolioData(resumeText: string) {
       3. 'certifications' (array of objects with 'name', 'issuer', and 'date' (string, e.g. "2023")).
       4. 'achievements' (array of objects with 'title' and 'description').
       If any category is not found, return an empty array for that key. Resume: ${resumeText}`,
+      config: {
+        responseMimeType: 'application/json',
+      }
     });
     
     let text = response.text || '{}';
-    // Remove markdown code blocks if present
-    text = text.replace(/```json/g, '').replace(/```/g, '').trim();
     
+    // In case the model still wraps it in markdown despite the config
+    text = text.replace(/```json/gi, '').replace(/```/g, '').trim();
+    
+    // Fallback: try to find the first '{' and last '}'
+    const firstBrace = text.indexOf('{');
+    const lastBrace = text.lastIndexOf('}');
+    if (firstBrace !== -1 && lastBrace !== -1) {
+      text = text.substring(firstBrace, lastBrace + 1);
+    }
+
     const data = JSON.parse(text);
     return {
       skills: Array.isArray(data.skills) ? data.skills : [],
@@ -32,8 +43,11 @@ async function extractPortfolioData(resumeText: string) {
       certifications: Array.isArray(data.certifications) ? data.certifications : [],
       achievements: Array.isArray(data.achievements) ? data.achievements : [],
     };
-  } catch (error) {
-    console.error('Failed to extract portfolio data:', error);
+  } catch (error: any) {
+    console.error('Failed to extract portfolio data. The LLM might have returned invalid JSON or rate limit hit.', error);
+    if (error?.status === 429 || (error?.message && error.message.includes('429'))) {
+      throw new Error("RATE_LIMIT");
+    }
     return { skills: [], projects: [], certifications: [], achievements: [] };
   }
 }
@@ -108,30 +122,39 @@ router.post('/resume/file', protect, resumeUpload.single('resume'), async (req: 
     // ------------------------------
     
     // --- NEW: Portfolio Extraction ---
+    let extractionFailed = false;
     if (user.resumeText && user.resumeText !== 'Error extracting text from PDF') {
-      const extractedData = await extractPortfolioData(user.resumeText);
-      // Merge unique skills
-      const mergedSkills = new Set([...user.skills, ...extractedData.skills]);
-      user.skills = Array.from(mergedSkills);
-      user.projects = extractedData.projects as any;
-      user.certifications = extractedData.certifications as any;
-      user.achievements = extractedData.achievements as any;
+      try {
+        const extractedData = await extractPortfolioData(user.resumeText);
+        // Merge unique skills
+        const mergedSkills = new Set([...user.skills, ...extractedData.skills]);
+        user.skills = Array.from(mergedSkills);
+        user.projects = extractedData.projects as any;
+        user.certifications = extractedData.certifications as any;
+        user.achievements = extractedData.achievements as any;
+      } catch (e: any) {
+        if (e.message === "RATE_LIMIT") extractionFailed = true;
+      }
     }
     // ------------------------------
 
     await user.save();
 
     res.json({ 
-      message: 'Resume uploaded successfully',
+      message: extractionFailed ? 'Resume saved, but AI extraction failed due to rate limits. Try again in 1 minute.' : 'Resume uploaded successfully',
       resumeUrl: user.resumeUrl,
       projects: user.projects,
       skills: user.skills,
       certifications: user.certifications,
       achievements: user.achievements
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error(error);
-    res.status(500).json({ message: 'Server Error' });
+    if (error?.status === 429 || (error?.message && error.message.includes('429'))) {
+      res.status(429).json({ message: "AI rate limit reached. Please wait 1 minute." });
+    } else {
+      res.status(500).json({ message: 'Server Error' });
+    }
   }
 });
 
@@ -155,27 +178,36 @@ router.post('/resume/text', protect, async (req: Request | any, res: Response): 
     user.resumeText = text;
     
     // --- NEW: Portfolio Extraction ---
-    const extractedData = await extractPortfolioData(user.resumeText);
-    const mergedSkills = new Set([...user.skills, ...extractedData.skills]);
-    user.skills = Array.from(mergedSkills);
-    user.projects = extractedData.projects as any;
-    user.certifications = extractedData.certifications as any;
-    user.achievements = extractedData.achievements as any;
+    let extractionFailed = false;
+    try {
+      const extractedData = await extractPortfolioData(user.resumeText);
+      const mergedSkills = new Set([...user.skills, ...extractedData.skills]);
+      user.skills = Array.from(mergedSkills);
+      user.projects = extractedData.projects as any;
+      user.certifications = extractedData.certifications as any;
+      user.achievements = extractedData.achievements as any;
+    } catch (e: any) {
+      if (e.message === "RATE_LIMIT") extractionFailed = true;
+    }
     // ------------------------------
     
     await user.save();
 
     res.json({ 
-      message: 'Text resume saved successfully',
+      message: extractionFailed ? 'Resume saved, but AI extraction failed due to rate limits. Try again in 1 minute.' : 'Text resume saved successfully',
       resumeText: user.resumeText,
       projects: user.projects,
       skills: user.skills,
       certifications: user.certifications,
       achievements: user.achievements
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error(error);
-    res.status(500).json({ message: 'Server Error' });
+    if (error?.status === 429 || (error?.message && error.message.includes('429'))) {
+      res.status(429).json({ message: "AI rate limit reached. Please wait 1 minute." });
+    } else {
+      res.status(500).json({ message: 'Server Error' });
+    }
   }
 });
 
@@ -210,6 +242,81 @@ router.delete('/resume/file', protect, async (req: Request | any, res: Response)
   } catch (error) {
     console.error('Error deleting resume:', error);
     res.status(500).json({ message: 'Server Error during deletion' });
+  }
+});
+
+// PUT /api/users/template
+// Save active template
+router.put('/template', protect, async (req: Request | any, res: Response): Promise<void> => {
+  try {
+    const { templateId } = req.body;
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      res.status(404).json({ message: 'User not found' });
+      return;
+    }
+
+    user.activeTemplate = templateId;
+    await user.save();
+    res.json({ message: 'Template updated successfully', activeTemplate: user.activeTemplate });
+  } catch (error) {
+    console.error('Error updating template:', error);
+    res.status(500).json({ message: 'Server Error' });
+  }
+});
+
+// PUT /api/users/username
+// Claim unique username
+router.put('/username', protect, async (req: Request | any, res: Response): Promise<void> => {
+  try {
+    const { username } = req.body;
+    
+    // Check if taken
+    const existing = await User.findOne({ username });
+    if (existing && existing._id.toString() !== req.user._id.toString()) {
+      res.status(400).json({ message: 'Username is already taken' });
+      return;
+    }
+
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      res.status(404).json({ message: 'User not found' });
+      return;
+    }
+
+    user.username = username;
+    await user.save();
+    res.json({ message: 'Username updated successfully', username: user.username });
+  } catch (error) {
+    console.error('Error updating username:', error);
+    res.status(500).json({ message: 'Server Error' });
+  }
+});
+
+// GET /api/users/public/:username
+// Get public profile (No Auth Required)
+router.get('/public/:username', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const user = await User.findOne({ username: req.params.username });
+    if (!user) {
+      res.status(404).json({ message: 'Profile not found' });
+      return;
+    }
+
+    // Only return safe public fields
+    res.json({
+      name: user.name,
+      username: user.username,
+      profileImage: user.profileImage,
+      skills: user.skills,
+      projects: user.projects,
+      certifications: user.certifications,
+      achievements: user.achievements,
+      activeTemplate: user.activeTemplate
+    });
+  } catch (error) {
+    console.error('Error fetching public profile:', error);
+    res.status(500).json({ message: 'Server Error' });
   }
 });
 

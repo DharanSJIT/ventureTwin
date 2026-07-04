@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-interface User {
+export interface User {
   _id: string;
   name: string;
   email: string;
@@ -9,9 +9,12 @@ interface User {
   profileImage?: string;
   resumeUrl?: string;
   resumeText?: string;
-  projects?: { title: string; description: string; technologies: string[] }[];
-  certifications?: { name: string; issuer: string; date: string }[];
-  achievements?: { title: string; description: string }[];
+  skills: string[];
+  projects: any[];
+  certifications: any[];
+  achievements: any[];
+  activeTemplate?: string;
+  username?: string;
 }
 
 interface AuthState {

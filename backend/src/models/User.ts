@@ -6,6 +6,11 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  username: {
+    type: String,
+    unique: true,
+    sparse: true,
+  },
   email: {
     type: String,
     required: true,
@@ -33,18 +38,22 @@ const userSchema = new mongoose.Schema({
   },
   projects: [{
     title: { type: String, required: true },
-    description: { type: String, required: true },
-    technologies: { type: [String], default: [] }
+    description: { type: String, default: '' },
+    technologies: [{ type: String }]
   }],
   certifications: [{
     name: { type: String, required: true },
-    issuer: { type: String, required: true },
+    issuer: { type: String, default: 'Unknown' },
     date: { type: String, default: '' }
   }],
   achievements: [{
     title: { type: String, required: true },
-    description: { type: String, required: true }
-  }]
+    description: { type: String, default: '' }
+  }],
+  activeTemplate: {
+    type: String,
+    default: 'modern'
+  }
 }, { timestamps: true });
 
 // Hash password before saving

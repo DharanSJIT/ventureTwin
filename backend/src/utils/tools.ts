@@ -10,15 +10,38 @@ export const updateUiStateTool = {
         properties: {
           action: {
             type: Type.STRING,
-            description: "The type of UI change. Must be one of: 'ADD_SKILL', 'RENDER_CHART', 'CHANGE_THEME', 'SHOW_ALERT'"
+            description: "The type of UI change. Must be one of: 'ADD_SKILL', 'ADD_PROJECT', 'ADD_CERTIFICATION', 'ADD_ACHIEVEMENT', 'RENDER_CHART', 'CHANGE_THEME', 'SHOW_ALERT'"
           },
           payload: {
             type: Type.OBJECT,
-            description: "The data required for the action. For ADD_SKILL, it should be { skills: ['skill1'] }. For RENDER_CHART, it should be { chartType: 'pie', data: [...] }. For SHOW_ALERT, it should be { title: '...', message: '...' }",
+            description: "The data required for the action. For ADD_SKILL: { skills: ['skill1'] }. For ADD_PROJECT: { project: { title: '...', description: '...', technologies: ['...'] } }. For ADD_CERTIFICATION: { certification: { name: '...', issuer: '...', date: '...' } }. For ADD_ACHIEVEMENT: { achievement: { title: '...', description: '...' } }",
             properties: {
               skills: {
                 type: Type.ARRAY,
                 items: { type: Type.STRING }
+              },
+              project: {
+                type: Type.OBJECT,
+                properties: {
+                  title: { type: Type.STRING },
+                  description: { type: Type.STRING },
+                  technologies: { type: Type.ARRAY, items: { type: Type.STRING } }
+                }
+              },
+              certification: {
+                type: Type.OBJECT,
+                properties: {
+                  name: { type: Type.STRING },
+                  issuer: { type: Type.STRING },
+                  date: { type: Type.STRING }
+                }
+              },
+              achievement: {
+                type: Type.OBJECT,
+                properties: {
+                  title: { type: Type.STRING },
+                  description: { type: Type.STRING }
+                }
               },
               chartType: {
                 type: Type.STRING

@@ -11,7 +11,10 @@ import Placeholder from './pages/Placeholder';
 import Skills from './pages/Skills';
 import Certifications from './pages/Certifications';
 import Achievements from './pages/Achievements';
+import PortfolioBuilder from './pages/PortfolioBuilder';
+import LivePortfolio from './pages/LivePortfolio';
 import Login from './pages/auth/Login';
+import AIAssistant from './components/AIAssistant';
 import Register from './pages/auth/Register';
 import Landing from './pages/Landing';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -34,9 +37,13 @@ function App() {
         <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
         <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
         
+        {/* Public Live Portfolio Route (Outside Dashboard) */}
+        <Route path="/p/:username" element={<LivePortfolio />} />
+
         {/* Protected Dashboard Routes */}
         <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/builder" element={<PortfolioBuilder />} />
           <Route path="/decisions" element={<Placeholder />} />
           <Route path="/skills" element={<Skills />} />
           <Route path="/projects" element={<Projects />} />
@@ -59,7 +66,8 @@ function App() {
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-      <Toaster position="bottom-right" richColors />
+      <AIAssistant />
+      <Toaster position="top-right" />
     </Router>
   );
 }

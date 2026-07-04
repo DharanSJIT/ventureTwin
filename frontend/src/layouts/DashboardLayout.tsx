@@ -5,6 +5,7 @@ import {
   Crosshair, 
   FolderKanban, 
   Trophy,
+  FileCode2,
   Activity,
   Map,
   Award,
@@ -51,6 +52,7 @@ const sidebarItems = [
       { name: 'Projects', path: '/projects', icon: FolderKanban },
       { name: 'Certifications', path: '/certifications', icon: Award },
       { name: 'Achievements', path: '/achievements', icon: Trophy },
+      { name: 'Builder', path: '/builder', icon: FileCode2 },
     ]
   },
   { name: 'Opportunities', path: '/opportunities', icon: Trophy },

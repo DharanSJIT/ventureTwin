@@ -26,6 +26,15 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
         _id: user._id,
         name: user.name,
         email: user.email,
+        profileImage: user.profileImage,
+        resumeUrl: user.resumeUrl,
+        resumeText: user.resumeText,
+        skills: user.skills,
+        projects: user.projects,
+        certifications: user.certifications,
+        achievements: user.achievements,
+        activeTemplate: user.activeTemplate,
+        username: user.username,
         token: generateToken(user._id.toString()),
       });
     } else {
@@ -49,6 +58,15 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
         _id: user._id,
         name: user.name,
         email: user.email,
+        profileImage: user.profileImage,
+        resumeUrl: user.resumeUrl,
+        resumeText: user.resumeText,
+        skills: user.skills,
+        projects: user.projects,
+        certifications: user.certifications,
+        achievements: user.achievements,
+        activeTemplate: user.activeTemplate,
+        username: user.username,
         token: generateToken(user._id.toString()),
       });
     } else {
