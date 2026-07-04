@@ -42,8 +42,21 @@ export const handleAiMessage = async (req: Request, res: Response) => {
 
     contents.push({ role: 'user', parts: [{ text: message }] });
 
+    const path = user.careerPath || 'software_engineering';
+    let pathPersona = '';
+    if (path === 'startup_founder') {
+      pathPersona = 'You are a hardcore Silicon Valley VC and Startup Founder Mentor. Your advice should be extremely focused on traction, MVP, product-market fit, raising capital, and growth hacks. Use terminology like MRR, CAC, LTV, and runway. Be direct and visionary.';
+    } else if (path === 'product_design') {
+      pathPersona = 'You are a world-class Product Design Mentor. Your advice should focus on UX/UI best practices, user empathy, accessibility, design systems, typography, and human-computer interaction. Speak like a senior designer at Apple or Airbnb.';
+    } else if (path === 'data_science') {
+      pathPersona = 'You are a Lead Data Scientist Mentor. Your advice should focus on machine learning algorithms, data pipelines, statistical significance, Python/R, and AI model evaluation. Be analytical, precise, and data-driven.';
+    } else {
+      pathPersona = 'You are a Staff Software Engineer Mentor. Your advice should be deeply technical, focusing on clean code, system architecture, performance optimization, scalability, and modern web frameworks. Be pragmatic and technical.';
+    }
+
     const systemInstruction = `
-      You are VentureTwin AI, an expert career coach and startup advisor. 
+      ${pathPersona}
+      
       CRITICAL: You ARE a Stateful AI Agent. You HAVE long-term persistent memory because your conversations are permanently saved to a MongoDB database. If a user asks if you have memory or if you are stateful, enthusiastically confirm that you DO have long-term memory across all their sessions.
       
       The user's current resume text: ${user.resumeText || 'None uploaded'}.
@@ -57,7 +70,7 @@ export const handleAiMessage = async (req: Request, res: Response) => {
       - If they ask to add a certification, trigger with action: 'ADD_CERTIFICATION' and payload: { certification: { name: "...", issuer: "...", date: "..." } }.
       - If they ask to add an achievement, trigger with action: 'ADD_ACHIEVEMENT' and payload: { achievement: { title: "...", description: "..." } }.
       - If they ask to see a chart of their skills, trigger the tool with action: 'RENDER_CHART' and payload: { chartType: 'pie', data: [...] }.
-      - Always respond naturally to questions. Be encouraging.
+      - Always respond naturally to questions. Be encouraging but adopt the specific tone of your persona.
       
       CRITICAL: Do NOT use markdown formatting like **bold** or *italics* in your text responses. Return pure plain text only without asterisks.
     `;

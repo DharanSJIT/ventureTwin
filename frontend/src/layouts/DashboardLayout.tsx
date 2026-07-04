@@ -58,6 +58,7 @@ const sidebarItems = [
     ]
   },
   { name: 'Opportunities', path: '/opportunities', icon: Trophy },
+  { name: 'Career Graph', path: '/career-graph', icon: Map },
   { name: 'Insights', path: '/insights', icon: Activity },
   { name: 'Timeline', path: '/timeline', icon: Map },
   { name: 'Applications', path: '/applications', icon: Briefcase },
@@ -154,6 +155,39 @@ export default function DashboardLayout() {
     scrollToBottom();
   }, [messages, isThinking, uiState]);
 
+  // Apply Global Theme Based on Career Path
+  useEffect(() => {
+    const path = user?.careerPath || 'software_engineering';
+    document.documentElement.setAttribute('data-theme', path);
+  }, [user?.careerPath]);
+
+  const updateUser = useAuthStore((state) => state.updateUser);
+
+  const handlePathChange = async (path: string) => {
+    if (!user || !token) return;
+    
+    console.log("handlePathChange fired with path:", path);
+    // Optimistic Update
+    updateUser({ careerPath: path });
+    document.documentElement.setAttribute('data-theme', path);
+    
+    try {
+      const res = await fetch('http://localhost:3000/api/users/career-path', {
+        method: 'PUT',
+        headers: { 
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ careerPath: path })
+      });
+      if (!res.ok) {
+        console.error("Failed to persist theme on server");
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   const handleSendMessage = async () => {
     if (!inputValue.trim()) return;
 
@@ -236,7 +270,7 @@ export default function DashboardLayout() {
                               className={cn(
                                 "flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-semibold transition-all duration-200",
                                 isActive 
-                                  ? "bg-blue-50 text-primary shadow-sm" 
+                                  ? "bg-primary/10 text-primary shadow-sm" 
                                   : "text-slate-500 hover:bg-slate-100 hover:text-slate-900"
                               )}
                             >
@@ -260,7 +294,7 @@ export default function DashboardLayout() {
                 className={cn(
                   "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200",
                   isActive 
-                    ? "bg-blue-50 text-primary shadow-sm" 
+                    ? "bg-primary/10 text-primary shadow-sm" 
                     : "text-slate-500 hover:bg-slate-100 hover:text-slate-900"
                 )}
               >
@@ -283,7 +317,7 @@ export default function DashboardLayout() {
                 </Avatar>
                 <div className="flex flex-col">
                   <span className="text-sm font-bold text-slate-900 truncate max-w-[100px]">{userName}</span>
-                  <span className="text-xs text-primary font-semibold bg-blue-50 px-1.5 py-0.5 rounded w-fit mt-0.5">{userPlan}</span>
+                  <span className="text-xs text-primary font-semibold bg-primary/10 px-1.5 py-0.5 rounded w-fit mt-0.5">{userPlan}</span>
                 </div>
               </div>
             </DropdownMenuTrigger>
@@ -323,11 +357,39 @@ export default function DashboardLayout() {
             </div>
           </div>
           <div className="flex items-center gap-3 ml-4">
-            <Button variant="ghost" size="icon" className="text-slate-500 hover:text-primary hover:bg-blue-50 rounded-xl">
+            {/* Career Path Selector */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="border-primary/20 bg-primary/5 text-primary hover:bg-primary/10 hover:text-primary font-bold rounded-xl hidden md:flex items-center gap-2">
+                  <Map className="w-4 h-4" /> 
+                  {user?.careerPath === 'startup_founder' ? 'Founder' : 
+                   user?.careerPath === 'product_design' ? 'Design' : 
+                   user?.careerPath === 'data_science' ? 'Data Science' : 'Engineering'}
+                  <ChevronDown className="w-4 h-4 ml-1 opacity-50" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56 bg-white border-slate-200 text-slate-700 shadow-xl rounded-xl">
+                <DropdownMenuLabel className="font-normal text-xs uppercase tracking-wider text-slate-500">
+                  Switch Global Theme & Mentor
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator className="bg-slate-100" />
+                <DropdownMenuItem className="cursor-pointer font-medium hover:bg-slate-50 rounded-lg" onClick={() => handlePathChange('software_engineering')}>
+                  Software Engineering (Default)
+                </DropdownMenuItem>
+                <DropdownMenuItem className="cursor-pointer font-medium hover:bg-slate-50 rounded-lg" onClick={() => handlePathChange('startup_founder')}>
+                  Startup Founder
+                </DropdownMenuItem>
+                <DropdownMenuItem className="cursor-pointer font-medium hover:bg-slate-50 rounded-lg" onClick={() => handlePathChange('product_design')}>
+                  Product Design
+                </DropdownMenuItem>
+                <DropdownMenuItem className="cursor-pointer font-medium hover:bg-slate-50 rounded-lg" onClick={() => handlePathChange('data_science')}>
+                  Data Science
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <Button variant="ghost" size="icon" className="text-slate-500 hover:text-primary hover:bg-primary/10 rounded-xl">
               <Bell className="w-5 h-5" />
-            </Button>
-            <Button variant="ghost" size="icon" className="text-slate-500 hover:text-primary hover:bg-blue-50 rounded-xl hidden sm:flex">
-              <Settings className="w-5 h-5" />
             </Button>
           </div>
         </header>
@@ -369,7 +431,7 @@ export default function DashboardLayout() {
           >
             <Button 
               size="icon" 
-              className="h-14 w-14 rounded-full bg-primary hover:bg-blue-700 border border-primary/20"
+              className="h-14 w-14 rounded-full bg-primary hover:bg-primary/90 border border-primary/20"
               onClick={() => setIsAiOpen(!isAiOpen)}
             >
               <Bot className="h-6 w-6 text-white" />
@@ -384,7 +446,7 @@ export default function DashboardLayout() {
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 20, scale: 0.95 }}
                 transition={{ type: "spring", bounce: 0.3 }}
-                className="fixed bottom-24 right-6 w-96 h-[500px] bg-white rounded-[24px] shadow-2xl shadow-blue-900/10 border border-slate-200 flex flex-col z-50 overflow-hidden"
+                className="fixed bottom-24 right-6 w-96 h-[500px] bg-white rounded-[24px] shadow-2xl shadow-primary/10 border border-slate-200 flex flex-col z-50 overflow-hidden"
               >
                 <div className="p-4 bg-primary border-b border-primary flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-inner">
@@ -434,7 +496,7 @@ export default function DashboardLayout() {
                       onClick={handleSendMessage}
                       disabled={isThinking || !inputValue.trim()}
                       size="icon" 
-                      className="absolute right-1.5 top-1.5 h-9 w-9 bg-primary hover:bg-blue-700 rounded-lg text-white shadow-sm disabled:opacity-50"
+                      className="absolute right-1.5 top-1.5 h-9 w-9 bg-primary hover:bg-primary/90 rounded-lg text-white shadow-sm disabled:opacity-50"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
                     </Button>

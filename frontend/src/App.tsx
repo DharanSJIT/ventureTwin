@@ -25,6 +25,7 @@ import Landing from './pages/Landing';
 import ProtectedRoute from './components/ProtectedRoute';
 import { useAuthStore } from './store/authStore';
 import { Toaster } from 'sonner';
+import CareerGraph from './pages/CareerGraph';
 
 // Helper to redirect logged-in users away from auth/landing pages
 function PublicRoute({ children }: { children: React.ReactNode }) {
@@ -62,6 +63,7 @@ function App() {
           <Route path="/learning" element={<Learning />} />
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/career-graph" element={<CareerGraph />} />
           
           {/* Legacy links that might still be active in some places */}
           <Route path="/career" element={<Career />} />

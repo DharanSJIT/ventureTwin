@@ -51,6 +51,11 @@ const userSchema = new mongoose.Schema({
     title: { type: String, required: true },
     description: { type: String, default: '' }
   }],
+  careerPath: {
+    type: String,
+    default: 'software_engineering',
+    enum: ['software_engineering', 'startup_founder', 'product_design', 'data_science']
+  },
   activeTemplate: {
     type: String,
     default: 'modern'

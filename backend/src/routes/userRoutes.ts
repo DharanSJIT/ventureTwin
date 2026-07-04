@@ -877,4 +877,101 @@ router.delete('/opportunities/:index', protect, async (req: Request | any, res: 
   }
 });
 
+// ==============================
+// CAREER PATH & GRAPH API
+// ==============================
+
+// PUT /api/users/career-path
+router.put('/career-path', protect, async (req: Request | any, res: Response): Promise<void> => {
+  try {
+    const { careerPath } = req.body;
+    const user = await User.findById(req.user._id) as any;
+    if (!user) {
+      res.status(404).json({ message: 'User not found' });
+      return;
+    }
+
+    user.careerPath = careerPath;
+    await user.save();
+    res.json({ message: 'Career path updated successfully', careerPath: user.careerPath });
+  } catch (error) {
+    console.error('Error updating career path:', error);
+    res.status(500).json({ message: 'Server Error' });
+  }
+});
+
+// POST /api/users/career-graph/generate
+router.post('/career-graph/generate', protect, async (req: Request | any, res: Response): Promise<void> => {
+  try {
+    const user = await User.findById(req.user._id) as any;
+    const skills = user.skills?.join(', ') || 'General Knowledge';
+    const path = user.careerPath || 'software_engineering';
+
+    const prompt = `You are a Career Architect AI.
+    The user is pursuing the path of: "${path}".
+    They currently have these skills: ${skills}.
+    Generate an interactive skill graph showing their journey from their current skills to mastery in their chosen path.
+    Return exactly this JSON format compatible with React Flow:
+    {
+      "nodes": [
+        { "id": "1", "data": { "label": "Current Skill 1" }, "position": { "x": 250, "y": 0 } },
+        { "id": "2", "data": { "label": "Target Skill 2" }, "position": { "x": 100, "y": 100 } }
+      ],
+      "edges": [
+        { "id": "e1-2", "source": "1", "target": "2", "animated": true }
+      ],
+      "insight": "A 2-sentence highly personalized mentor insight advising them what node to conquer next based on their path."
+    }
+    Generate about 7-10 nodes branching out logically. Ensure positions are spread out (e.g. y increments by 100, x shifts left/right).
+    Return purely valid JSON without markdown formatting or backticks.`;
+
+    const keysCount = Math.max(1, (process.env.GEMINI_API_KEY || '').split(',').length);
+    let response: any;
+    let lastError: any;
+    let generatedText = '';
+
+    for (let attempt = 0; attempt < keysCount; attempt++) {
+      try {
+        const ai = getAi();
+        response = await ai.models.generateContent({
+          model: 'gemini-2.5-flash',
+          contents: prompt,
+          config: { responseMimeType: 'application/json' }
+        });
+        generatedText = response?.text || '';
+        break;
+      } catch (err: any) {
+        lastError = err;
+        if (err?.status === 429 || err?.status === 503 || (err?.message && (err.message.includes('429') || err.message.includes('503'))) || (err?.message && err.message.includes('quota'))) continue;
+        throw err;
+      }
+    }
+
+    if (!generatedText) {
+      if (process.env.GROQ_API_KEY) {
+        const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+        const groqResponse = await groq.chat.completions.create({
+          model: 'llama-3.3-70b-versatile',
+          messages: [{ role: 'user', content: prompt }],
+          response_format: { type: "json_object" }
+        });
+        generatedText = groqResponse.choices[0]?.message?.content || '{}';
+      } else {
+        throw lastError;
+      }
+    }
+
+    generatedText = generatedText.replace(/```json/g, '').replace(/```/g, '').trim();
+    const firstBrace = generatedText.indexOf('{');
+    const lastBrace = generatedText.lastIndexOf('}');
+    if (firstBrace !== -1 && lastBrace !== -1) generatedText = generatedText.substring(firstBrace, lastBrace + 1);
+
+    const graphData = JSON.parse(generatedText);
+    res.json(graphData);
+  } catch (error) {
+    console.error('Career Graph Error:', error);
+    res.status(500).json({ message: 'Error generating career graph' });
+  }
+});
+
 export default router;
