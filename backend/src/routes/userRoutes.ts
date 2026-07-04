@@ -974,4 +974,77 @@ router.post('/career-graph/generate', protect, async (req: Request | any, res: R
   }
 });
 
+// POST /api/users/insights/generate
+router.post('/insights/generate', protect, async (req: Request | any, res: Response): Promise<void> => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      res.status(404).json({ message: 'User not found' });
+      return;
+    }
+
+    const { GoogleGenerativeAI } = require('@google/genai');
+    const { Groq } = require('groq-sdk');
+    
+    const genAI = new GoogleGenerativeAI({ apiKey: process.env.GEMINI_API_KEY });
+    const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+
+    const prompt = `
+    You are an expert career advisor. The user is a ${user.careerPath || 'professional'} with the following skills: ${user.skills?.join(', ') || 'general'}.
+    Based on their profile, suggest highly relevant, modern, and prestigious opportunities to help them advance their career.
+    Provide exactly 3 courses, 3 trainings/bootcamps, and 3 certification exams.
+    
+    Return the response STRICTLY as a JSON object with this exact structure:
+    {
+      "courses": [{ "title": "string", "description": "string", "url": "string" }],
+      "trainings": [{ "title": "string", "description": "string", "url": "string" }],
+      "exams": [{ "title": "string", "description": "string", "url": "string" }]
+    }
+    Make the URLs generic but realistic (e.g., https://coursera.org/..., https://aws.amazon.com/certification/...).
+    `;
+
+    let generatedText = '';
+    
+    try {
+      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+      const result = await model.generateContent(prompt);
+      generatedText = result.response.text();
+    } catch (error: any) {
+      console.log('Gemini failed for insights, falling back to Groq');
+      const groqResponse = await groq.chat.completions.create({
+        messages: [{ role: 'user', content: prompt }],
+        model: 'llama-3.3-70b-versatile',
+        response_format: { type: 'json_object' }
+      });
+      generatedText = groqResponse.choices[0]?.message?.content || '{}';
+    }
+
+    generatedText = generatedText.replace(/```json/g, '').replace(/```/g, '').trim();
+    const firstBrace = generatedText.indexOf('{');
+    const lastBrace = generatedText.lastIndexOf('}');
+    if (firstBrace !== -1 && lastBrace !== -1) generatedText = generatedText.substring(firstBrace, lastBrace + 1);
+
+    const insightsData = JSON.parse(generatedText);
+    insightsData.generatedAt = new Date();
+    
+    user.insights = insightsData;
+    await user.save();
+
+    res.json(insightsData);
+  } catch (error) {
+    console.error('Insights Match Error:', error);
+    res.status(500).json({ message: 'Error generating insights' });
+  }
+});
+
+// GET /api/users/insights
+router.get('/insights', protect, async (req: Request | any, res: Response): Promise<void> => {
+  try {
+    const user = await User.findById(req.user._id);
+    res.json(user?.insights || null);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching insights' });
+  }
+});
+
 export default router;

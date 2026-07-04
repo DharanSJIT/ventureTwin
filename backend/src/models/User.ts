@@ -113,6 +113,12 @@ const userSchema = new mongoose.Schema({
     recommendation: { type: String, default: '' },
     createdAt: { type: Date, default: Date.now }
   }],
+  insights: {
+    courses: [{ title: String, description: String, url: String }],
+    trainings: [{ title: String, description: String, url: String }],
+    exams: [{ title: String, description: String, url: String }],
+    generatedAt: { type: Date }
+  },
   opportunities: [{
     role: { type: String, required: true },
     company: { type: String, default: 'Matching Network' },
