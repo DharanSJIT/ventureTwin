@@ -26,6 +26,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import { useAuthStore } from './store/authStore';
 import { Toaster } from 'sonner';
 import CareerGraph from './pages/CareerGraph';
+import CursorSpotlight from './components/CursorSpotlight';
 
 // Helper to redirect logged-in users away from auth/landing pages
 function PublicRoute({ children }: { children: React.ReactNode }) {
@@ -73,6 +74,7 @@ function App() {
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      <CursorSpotlight />
       <AIAssistant />
       <Toaster position="top-right" />
     </Router>

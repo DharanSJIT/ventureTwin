@@ -6,18 +6,21 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
+import confetti from 'canvas-confetti';
 
 export default function AIAssistant() {
   const [isOpen, setIsOpen] = useState(false);
   const [message, setMessage] = useState('');
-  const [isSending, setIsSending] = useState(false);
+  
   const [chatHistory, setChatHistory] = useState<{role: 'ai' | 'user', text: string}[]>([
     { role: 'ai', text: 'Hi! Tell me about a new project, skill, or certification you want to add to your portfolio.' }
   ]);
   
   // Voice State
-  const [isListening, setIsListening] = useState(false);
+  const [isSending, setIsSending] = useState(false);
   const [isVoiceOutputEnabled, setIsVoiceOutputEnabled] = useState(true);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isListening, setIsListening] = useState(false);
   const recognitionRef = useRef<any>(null);
 
   const { login, user } = useAuthStore();
@@ -79,6 +82,11 @@ export default function AIAssistant() {
     
     utterance.rate = 1.0;
     utterance.pitch = 1.0;
+
+    utterance.onstart = () => setIsSpeaking(true);
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
+
     window.speechSynthesis.speak(utterance);
   };
 
@@ -161,10 +169,11 @@ export default function AIAssistant() {
         setChatHistory(prev => [...prev, { role: 'ai', text: errorMsg }]);
         speak(errorMsg);
       }
-    } catch (err) {
-      const networkError = 'Network error occurred.';
-      setChatHistory(prev => [...prev, { role: 'ai', text: networkError }]);
-      speak(networkError);
+    } catch (err: any) {
+      console.error('Error during AI chat submission:', err);
+      const errorMessage = err?.message || 'An unexpected error occurred.';
+      setChatHistory(prev => [...prev, { role: 'ai', text: errorMessage }]);
+      speak(errorMessage);
     } finally {
       setIsSending(false);
     }
@@ -239,9 +248,24 @@ export default function AIAssistant() {
                   </div>
                 )}
               </div>
+              
+              {/* AI Breathing Visualizer */}
+              {(isSending || isSpeaking) && (
+                <div className="absolute bottom-[80px] left-0 right-0 flex justify-center pointer-events-none z-10 overflow-visible">
+                  <motion.div
+                    animate={
+                      isSpeaking 
+                        ? { scale: [1, 1.8, 1.2, 1.6, 1], opacity: [0.6, 1, 0.7, 0.9, 0.6], filter: ['blur(12px)', 'blur(20px)', 'blur(16px)', 'blur(24px)', 'blur(12px)'] } 
+                        : { scale: [1, 1.1, 1], opacity: [0.3, 0.6, 0.3], filter: ['blur(10px)', 'blur(14px)', 'blur(10px)'] }
+                    }
+                    transition={{ repeat: Infinity, duration: isSpeaking ? 1.5 : 3, ease: "easeInOut" }}
+                    className="w-16 h-4 rounded-[100%] bg-gradient-to-r from-blue-400 via-indigo-500 to-purple-500 mix-blend-multiply"
+                  />
+                </div>
+              )}
 
               {/* Input */}
-              <div className="p-3 bg-white border-t border-slate-100 flex gap-2">
+              <div className="p-3 bg-white border-t border-slate-100 flex gap-2 relative z-20">
                 <Button 
                   onClick={toggleListening} 
                   type="button" 

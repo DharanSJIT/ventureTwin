@@ -4,9 +4,9 @@ import { motion } from 'framer-motion';
 import { Crosshair, AlertCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Tooltip } from 'recharts';
-import { ReactFlow, Background, Controls, type Node, type Edge } from '@xyflow/react';
+import { ReactFlow, Background, Controls, type Node, type Edge, useNodesState, useEdgesState } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
 
 // Helper to categorize skills into domains
 const categorizeSkill = (skill: string) => {
@@ -105,6 +105,14 @@ export default function Skills() {
     return { flowNodes: nodes, flowEdges: edges };
   }, [skills, user]);
 
+  const [nodes, setNodes, onNodesChange] = useNodesState(flowNodes);
+  const [edges, setEdges, onEdgesChange] = useEdgesState(flowEdges);
+
+  // Sync state when skills change
+  useEffect(() => {
+    setNodes(flowNodes);
+    setEdges(flowEdges);
+  }, [flowNodes, flowEdges, setNodes, setEdges]);
   
   // Group skills by domain and calculate average score
   const domainScores: Record<string, { total: number; count: number; skills: string[] }> = {};
@@ -200,8 +208,10 @@ export default function Skills() {
               </CardHeader>
               <CardContent className="p-0 h-[400px]">
                 <ReactFlow 
-                  nodes={flowNodes} 
-                  edges={flowEdges} 
+                  nodes={nodes} 
+                  edges={edges} 
+                  onNodesChange={onNodesChange}
+                  onEdgesChange={onEdgesChange}
                   fitView 
                   className="bg-slate-50"
                   proOptions={{ hideAttribution: true }}

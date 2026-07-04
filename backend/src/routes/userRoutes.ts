@@ -983,12 +983,6 @@ router.post('/insights/generate', protect, async (req: Request | any, res: Respo
       return;
     }
 
-    const { GoogleGenAI } = require('@google/genai');
-    const { Groq } = require('groq-sdk');
-    
-    const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-    const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
-
     const prompt = `
     You are an expert career advisor. The user is a ${user.careerPath || 'professional'} with the following skills: ${user.skills?.join(', ') || 'general'}.
     Based on their profile, suggest highly relevant, modern, and prestigious opportunities to help them advance their career.
@@ -1003,22 +997,41 @@ router.post('/insights/generate', protect, async (req: Request | any, res: Respo
     Make the URLs generic but realistic (e.g., https://coursera.org/..., https://aws.amazon.com/certification/...).
     `;
 
+    const keysCount = Math.max(1, (process.env.GEMINI_API_KEY || '').split(',').length);
+    let response: any;
+    let lastError: any;
     let generatedText = '';
-    
-    try {
-      const result = await genAI.models.generateContent({
-        model: "gemini-2.5-flash",
-        contents: prompt
-      });
-      generatedText = result.text;
-    } catch (error: any) {
-      console.log('Gemini failed for insights, falling back to Groq');
-      const groqResponse = await groq.chat.completions.create({
-        messages: [{ role: 'user', content: prompt }],
-        model: 'llama-3.3-70b-versatile',
-        response_format: { type: 'json_object' }
-      });
-      generatedText = groqResponse.choices[0]?.message?.content || '{}';
+
+    for (let attempt = 0; attempt < keysCount; attempt++) {
+      try {
+        const ai = getAi();
+        response = await ai.models.generateContent({
+          model: 'gemini-2.5-flash',
+          contents: prompt,
+          config: { responseMimeType: 'application/json' }
+        });
+        generatedText = response?.text || '';
+        break;
+      } catch (err: any) {
+        lastError = err;
+        if (err?.status === 429 || err?.status === 503 || (err?.message && (err.message.includes('429') || err.message.includes('503'))) || (err?.message && err.message.includes('quota'))) continue;
+        throw err;
+      }
+    }
+
+    if (!generatedText) {
+      if (process.env.GROQ_API_KEY) {
+        console.warn(`[AI] Gemini rate limited for insights. Falling back to Groq...`);
+        const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+        const groqResponse = await groq.chat.completions.create({
+          model: 'llama-3.3-70b-versatile',
+          messages: [{ role: 'user', content: prompt }],
+          response_format: { type: "json_object" }
+        });
+        generatedText = groqResponse.choices[0]?.message?.content || '{}';
+      } else {
+        throw lastError;
+      }
     }
 
     generatedText = generatedText.replace(/```json/g, '').replace(/```/g, '').trim();

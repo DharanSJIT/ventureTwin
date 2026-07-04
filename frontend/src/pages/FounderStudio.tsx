@@ -6,6 +6,7 @@ import { Lightbulb, Rocket, Users, Coins, Sparkles, TrendingUp, Loader2, ArrowLe
 import { Badge } from "@/components/ui/badge";
 import { useAuthStore } from "@/store/authStore";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
+import { motion } from 'framer-motion';
 
 // Fallbacks for older blueprints generated before dynamic data was added
 const fallbackRevenueData = [
@@ -350,26 +351,44 @@ export default function FounderStudio() {
                   <CardContent className="p-8 relative z-10">
                     
                     {/* Visual Timeline Element */}
-                    <div className="flex justify-between items-center mb-10 pb-10 border-b border-slate-100 px-4">
-                      <div className="flex flex-col items-center gap-2 relative">
-                        <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold border-2 border-blue-200 z-10">1</div>
-                        <span className="text-xs font-bold text-slate-500 uppercase">Ideation</span>
-                        <div className="absolute top-5 left-10 w-[calc(100vw/5)] max-w-[120px] h-0.5 bg-blue-200 -z-0"></div>
-                      </div>
-                      <div className="flex flex-col items-center gap-2 relative">
-                        <div className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold shadow-md shadow-blue-200 z-10">2</div>
-                        <span className="text-xs font-bold text-blue-600 uppercase">MVP</span>
-                        <div className="absolute top-5 left-10 w-[calc(100vw/5)] max-w-[120px] h-0.5 bg-slate-200 -z-0"></div>
-                      </div>
-                      <div className="flex flex-col items-center gap-2 relative">
-                        <div className="w-10 h-10 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center font-bold border-2 border-slate-200 z-10">3</div>
-                        <span className="text-xs font-bold text-slate-400 uppercase">Traction</span>
-                        <div className="absolute top-5 left-10 w-[calc(100vw/5)] max-w-[120px] h-0.5 bg-slate-200 -z-0"></div>
-                      </div>
-                      <div className="flex flex-col items-center gap-2 relative">
-                        <div className="w-10 h-10 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center font-bold border-2 border-slate-200 z-10">4</div>
-                        <span className="text-xs font-bold text-slate-400 uppercase">Seed</span>
-                      </div>
+                    <div className="relative max-w-2xl mx-auto mb-16 pt-10 pb-20">
+                      {/* Center Glowing Line */}
+                      <motion.div 
+                        className="absolute left-8 md:left-1/2 top-0 bottom-0 w-1 bg-gradient-to-b from-blue-500 via-indigo-500 to-purple-500 origin-top rounded-full transform md:-translate-x-1/2"
+                        initial={{ scaleY: 0 }}
+                        whileInView={{ scaleY: 1 }}
+                        viewport={{ once: false, margin: "-100px" }}
+                        transition={{ duration: 1.5, ease: "easeInOut" }}
+                      />
+                      
+                      {[
+                        { id: 1, title: 'Ideation & Discovery', desc: 'Define problem-solution fit, validate assumptions, and conduct user interviews.' },
+                        { id: 2, title: 'Minimum Viable Product', desc: 'Build the core feature set. Launch early and gather data.' },
+                        { id: 3, title: 'Traction & Growth', desc: 'Acquire early adopters, optimize funnel, and demonstrate product-market fit.' },
+                        { id: 4, title: 'Seed Funding', desc: 'Prepare pitch deck, financial model, and initiate investor outreach.' }
+                      ].map((phase, index) => (
+                        <motion.div 
+                          key={phase.id}
+                          className={`relative flex items-center justify-between md:justify-normal w-full mb-16 ${index % 2 === 0 ? 'md:flex-row-reverse' : 'md:flex-row'}`}
+                          initial={{ opacity: 0, y: 50, scale: 0.9 }}
+                          whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                          viewport={{ once: true, margin: "-100px" }}
+                          transition={{ duration: 0.6, delay: 0.1, type: "spring", bounce: 0.4 }}
+                        >
+                          {/* Timeline Node */}
+                          <div className="absolute left-8 md:left-1/2 w-8 h-8 rounded-full bg-white border-4 border-blue-500 z-10 transform -translate-x-1/2 flex items-center justify-center shadow-[0_0_15px_rgba(59,130,246,0.5)]">
+                             <div className="w-2 h-2 bg-blue-500 rounded-full" />
+                          </div>
+                          
+                          {/* Content Card */}
+                          <div className={`w-full pl-20 md:pl-0 md:w-5/12 ${index % 2 === 0 ? 'md:text-left' : 'md:text-right'}`}>
+                            <div className="p-6 bg-white border border-slate-200 rounded-2xl shadow-xl hover:shadow-2xl hover:border-blue-300 transition-all duration-300 group">
+                              <h3 className="text-lg font-bold text-slate-900 mb-2 group-hover:text-blue-600 transition-colors">Phase {phase.id}: {phase.title}</h3>
+                              <p className="text-slate-600 leading-relaxed font-medium text-sm">{phase.desc}</p>
+                            </div>
+                          </div>
+                        </motion.div>
+                      ))}
                     </div>
 
                     <div className="whitespace-pre-wrap text-slate-700 leading-relaxed font-medium text-lg">
