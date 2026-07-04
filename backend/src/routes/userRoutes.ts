@@ -4,8 +4,28 @@ import { avatarStorage, resumeStorage } from '../config/cloudinary';
 import cloudinary from '../config/cloudinary';
 import { protect } from '../middleware/authMiddleware';
 import User from '../models/User';
+import { GoogleGenAI } from '@google/genai';
 
 const pdfParse = require('pdf-parse');
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || 'fake-key-to-allow-init' });
+
+async function extractProjects(resumeText: string) {
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: `Extract all projects from the following resume. Return ONLY a valid JSON array of objects. Each object should have three fields: 'title' (string), 'description' (string, max 2 sentences), and 'technologies' (array of strings). If no projects are found, return []. Resume: ${resumeText}`,
+    });
+    
+    let text = response.text || '[]';
+    // Remove markdown code blocks if present
+    text = text.replace(/```json/g, '').replace(/```/g, '').trim();
+    
+    return JSON.parse(text);
+  } catch (error) {
+    console.error('Failed to extract projects:', error);
+    return [];
+  }
+}
 
 const router = express.Router();
 
@@ -75,12 +95,20 @@ router.post('/resume/file', protect, resumeUpload.single('resume'), async (req: 
       user.resumeText = 'Error extracting text from PDF';
     }
     // ------------------------------
+    
+    // --- NEW: Project Extraction ---
+    if (user.resumeText && user.resumeText !== 'Error extracting text from PDF') {
+      const extractedProjects = await extractProjects(user.resumeText);
+      user.projects = extractedProjects;
+    }
+    // ------------------------------
 
     await user.save();
 
     res.json({ 
       message: 'Resume uploaded successfully',
-      resumeUrl: user.resumeUrl
+      resumeUrl: user.resumeUrl,
+      projects: user.projects
     });
   } catch (error) {
     console.error(error);
@@ -106,11 +134,18 @@ router.post('/resume/text', protect, async (req: Request | any, res: Response): 
     }
 
     user.resumeText = text;
+    
+    // --- NEW: Project Extraction ---
+    const extractedProjects = await extractProjects(user.resumeText);
+    user.projects = extractedProjects;
+    // ------------------------------
+    
     await user.save();
 
     res.json({ 
       message: 'Text resume saved successfully',
-      resumeText: user.resumeText
+      resumeText: user.resumeText,
+      projects: user.projects
     });
   } catch (error) {
     console.error(error);
@@ -134,11 +169,13 @@ router.delete('/resume/file', protect, async (req: Request | any, res: Response)
       
       // Delete from Cloudinary (requires resource_type: raw for pdfs)
       await cloudinary.uploader.destroy(publicId, { resource_type: 'raw' });
-      
-      // Update DB
-      user.resumeUrl = '';
-      await user.save();
     }
+
+    // Update DB (Always clear these when delete is requested)
+    user.resumeUrl = '';
+    user.resumeText = '';
+    user.projects = [] as any;
+    await user.save();
 
     res.json({ message: 'Resume deleted successfully' });
   } catch (error) {

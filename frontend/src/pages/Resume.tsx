@@ -59,7 +59,7 @@ export default function Resume() {
       }
 
       if (response.ok && user) {
-        login({ ...user, resumeUrl: data.resumeUrl });
+        login({ ...user, resumeUrl: data.resumeUrl, resumeText: data.resumeText, projects: data.projects });
         toast.success('Resume uploaded successfully!');
       } else {
         toast.error(data.message || 'Upload failed');
@@ -90,7 +90,7 @@ export default function Resume() {
 
       const data = await response.json();
       if (response.ok && user) {
-        login({ ...user, resumeUrl: '' });
+        login({ ...user, resumeUrl: '', resumeText: '', projects: [] });
         toast.success('Resume deleted successfully');
       } else {
         toast.error(data.message || 'Delete failed');
@@ -120,7 +120,7 @@ export default function Resume() {
 
       const data = await response.json();
       if (response.ok && user) {
-        login({ ...user, resumeText: data.resumeText });
+        login({ ...user, resumeText: data.resumeText, projects: data.projects });
         toast.success('Text resume saved successfully!');
       } else {
         toast.error(data.message || 'Save failed');

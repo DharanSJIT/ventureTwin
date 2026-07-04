@@ -30,7 +30,12 @@ const userSchema = new mongoose.Schema({
   skills: {
     type: [String],
     default: [],
-  }
+  },
+  projects: [{
+    title: { type: String, required: true },
+    description: { type: String, required: true },
+    technologies: { type: [String], default: [] }
+  }]
 }, { timestamps: true });
 
 // Hash password before saving

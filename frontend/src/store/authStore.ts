@@ -9,6 +9,7 @@ interface User {
   profileImage?: string;
   resumeUrl?: string;
   resumeText?: string;
+  projects?: { title: string; description: string; technologies: string[] }[];
 }
 
 interface AuthState {
