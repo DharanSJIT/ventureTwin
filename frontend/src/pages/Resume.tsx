@@ -11,7 +11,7 @@ import { useRef } from 'react';
 import { DynamicResume } from '../components/DynamicResume';
 export default function Resume() {
   const user = useAuthStore((state) => state.user);
-  const login = useAuthStore((state) => state.login);
+  const updateUser = useAuthStore((state) => state.updateUser);
   
   const [activeTab, setActiveTab] = useState<'document' | 'text'>('document');
   const [resumeText, setResumeText] = useState(user?.resumeText || '');
@@ -67,8 +67,7 @@ export default function Resume() {
       }
 
       if (response.ok && user) {
-        login({ 
-          ...user, 
+        updateUser({ 
           resumeUrl: data.resumeUrl, 
           resumeText: data.resumeText, 
           projects: data.projects,
@@ -76,7 +75,11 @@ export default function Resume() {
           certifications: data.certifications,
           achievements: data.achievements 
         });
-        toast.success('Resume uploaded successfully!');
+        if (data.message && data.message.includes('failed')) {
+          toast.warning(data.message);
+        } else {
+          toast.success(data.message || 'Resume uploaded successfully!');
+        }
       } else {
         toast.error(data.message || 'Upload failed');
       }
@@ -106,8 +109,7 @@ export default function Resume() {
 
       const data = await response.json();
       if (response.ok && user) {
-        login({ 
-          ...user, 
+        updateUser({ 
           resumeUrl: undefined, 
           resumeText: undefined,
           projects: [],
@@ -144,15 +146,18 @@ export default function Resume() {
 
       const data = await response.json();
       if (response.ok && user) {
-        login({ 
-          ...user, 
+        updateUser({ 
           resumeText: data.resumeText,
           projects: data.projects,
           skills: data.skills,
           certifications: data.certifications,
           achievements: data.achievements
         });
-        toast.success('Text resume saved successfully!');
+        if (data.message && data.message.includes('failed')) {
+          toast.warning(data.message);
+        } else {
+          toast.success(data.message || 'Text resume saved successfully!');
+        }
       } else {
         toast.error(data.message || 'Save failed');
       }

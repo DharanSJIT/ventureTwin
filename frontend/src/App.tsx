@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { useEffect } from 'react';
 import DashboardLayout from './layouts/DashboardLayout';
 import Dashboard from './pages/Dashboard';
 import Projects from './pages/Projects';
@@ -36,6 +37,29 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 }
 
 function App() {
+  const { user, token, updateUser, logout } = useAuthStore();
+
+  useEffect(() => {
+    if (token && user) {
+      fetch('http://localhost:3000/api/auth/me', {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      .then(res => {
+        if (res.ok) return res.json();
+        if (res.status === 401) {
+           logout();
+        }
+        return null;
+      })
+      .then(data => {
+        if (data && data._id) {
+          updateUser(data);
+        }
+      })
+      .catch(console.error);
+    }
+  }, []);
+
   return (
     <Router>
       <Routes>

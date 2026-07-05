@@ -22,6 +22,7 @@ const getAi = () => {
 async function extractPortfolioData(resumeText: string) {
   try {
     const keysCount = Math.max(1, (process.env.GEMINI_API_KEY || '').split(',').length);
+    const maxAttempts = Math.max(3, keysCount); // Try at least 3 times
     let response: any;
     let lastError: any;
 
@@ -32,7 +33,7 @@ async function extractPortfolioData(resumeText: string) {
       4. 'achievements' (array of objects with 'title' and 'description').
       If any category is not found, return an empty array for that key. Resume: ${resumeText}`;
 
-    for (let attempt = 0; attempt < keysCount; attempt++) {
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
       try {
         const ai = getAi();
         response = await ai.models.generateContent({
@@ -45,8 +46,13 @@ async function extractPortfolioData(resumeText: string) {
         break;
       } catch (err: any) {
         lastError = err;
-        if (err?.status === 429 || (err?.message && err.message.includes('429')) || (err?.message && err.message.includes('quota'))) {
-          console.warn(`[Resume Parser] Key rate limited. Retrying... (Attempt ${attempt + 1}/${keysCount})`);
+        const isRetryable = err?.status === 429 || err?.status === 503 || 
+                            (err?.message && (err.message.includes('429') || err.message.includes('503') || err.message.includes('quota')));
+        
+        if (isRetryable) {
+          console.warn(`[Resume Parser] Key rate limited or service unavailable (${err?.status}). Retrying... (Attempt ${attempt + 1}/${maxAttempts})`);
+          // Add a small delay before retrying
+          await new Promise(resolve => setTimeout(resolve, 3000)); // wait 3 seconds
           continue;
         }
         throw err;
@@ -78,8 +84,8 @@ async function extractPortfolioData(resumeText: string) {
     };
   } catch (error: any) {
     console.error('Failed to extract portfolio data. The LLM might have returned invalid JSON or rate limit hit.', error);
-    if (error?.status === 429 || (error?.message && error.message.includes('429'))) {
-      throw new Error("RATE_LIMIT");
+    if (error?.status === 429 || error?.status === 503 || (error?.message && (error.message.includes('429') || error.message.includes('503')))) {
+      throw new Error("RATE_LIMIT_OR_UNAVAILABLE");
     }
     return { skills: [], projects: [], certifications: [], achievements: [] };
   }
@@ -166,7 +172,7 @@ router.post('/resume/file', protect, resumeUpload.single('resume'), async (req: 
         user.certifications = extractedData.certifications as any;
         user.achievements = extractedData.achievements as any;
       } catch (e: any) {
-        if (e.message === "RATE_LIMIT") extractionFailed = true;
+        if (e.message === "RATE_LIMIT" || e.message === "RATE_LIMIT_OR_UNAVAILABLE") extractionFailed = true;
       }
     }
     // ------------------------------
@@ -180,7 +186,7 @@ router.post('/resume/file', protect, resumeUpload.single('resume'), async (req: 
     }
 
     res.json({ 
-      message: extractionFailed ? 'Resume saved, but AI extraction failed due to rate limits. Try again in 1 minute.' : 'Resume uploaded successfully',
+      message: extractionFailed ? 'Resume saved, but AI extraction failed due to high demand/rate limits. Try again in a minute.' : 'Resume uploaded successfully',
       resumeUrl: user.resumeUrl,
       projects: user.projects,
       skills: user.skills,
@@ -226,7 +232,7 @@ router.post('/resume/text', protect, async (req: Request | any, res: Response): 
       user.certifications = extractedData.certifications as any;
       user.achievements = extractedData.achievements as any;
     } catch (e: any) {
-      if (e.message === "RATE_LIMIT") extractionFailed = true;
+      if (e.message === "RATE_LIMIT" || e.message === "RATE_LIMIT_OR_UNAVAILABLE") extractionFailed = true;
     }
     // ------------------------------
     
@@ -239,7 +245,7 @@ router.post('/resume/text', protect, async (req: Request | any, res: Response): 
     }
 
     res.json({ 
-      message: extractionFailed ? 'Resume saved, but AI extraction failed due to rate limits. Try again in 1 minute.' : 'Text resume saved successfully',
+      message: extractionFailed ? 'Resume saved, but AI extraction failed due to high demand/rate limits. Try again in a minute.' : 'Text resume saved successfully',
       resumeText: user.resumeText,
       projects: user.projects,
       skills: user.skills,
