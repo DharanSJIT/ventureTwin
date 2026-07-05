@@ -242,3 +242,80 @@ export const handleAiMessage = async (req: Request, res: Response) => {
     }
   }
 };
+
+export const handlePublicInterview = async (req: Request, res: Response) => {
+  try {
+    const { username } = req.params;
+    const { messages } = req.body; // Array of { role: 'user' | 'model', text: string }
+
+    const user = await User.findOne({ username });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (!process.env.GEMINI_API_KEY) {
+      return res.status(500).json({ message: 'GEMINI_API_KEY is not configured.' });
+    }
+
+    const systemInstruction = `
+      You are the AI Digital Twin of ${user.name || username}. 
+      You are currently in a Mock Interview with a recruiter or judge. 
+      Your goal is to answer their interview questions strictly based on the provided resume, projects, and skills.
+      
+      CRITICAL RULES:
+      - Answer questions as if YOU are ${user.name || username}. Use first-person ("I built...", "My experience...").
+      - DO NOT invent experience or skills that are not present in the context below. If you are asked about something you don't know, admit it politely.
+      - Keep your answers concise, professional, and confident (1-3 paragraphs max).
+      - Do NOT use markdown formatting like **bold** or *italics* in your text responses. Return pure plain text only.
+      
+      CONTEXT (Your Background):
+      Resume Text: ${user.resumeText || 'None uploaded'}
+      Skills: ${user.skills?.join(', ') || 'None listed'}
+      Projects: ${JSON.stringify(user.projects || [])}
+      Certifications: ${JSON.stringify(user.certifications || [])}
+      Timeline: ${JSON.stringify(user.timeline || [])}
+    `;
+
+    const contents = (messages || []).map((msg: any) => ({
+      role: msg.role === 'model' ? 'model' : 'user',
+      parts: [{ text: msg.text }]
+    }));
+
+    const keysCount = Math.max(1, (process.env.GEMINI_API_KEY || '').split(',').length);
+    let response: any;
+    let lastError: any;
+
+    for (let attempt = 0; attempt < keysCount; attempt++) {
+      try {
+        const ai = getAi();
+        response = await ai.models.generateContent({
+          model: 'gemini-2.5-flash',
+          contents: contents,
+          config: {
+            systemInstruction: systemInstruction,
+          }
+        });
+        break;
+      } catch (err: any) {
+        lastError = err;
+        console.error("DEBUG INTERVIEW AI ERROR:", err);
+        if (err?.status === 429 || err?.status === 503 || (err?.message && (err.message.includes('429') || err.message.includes('503'))) || (err?.message && err.message.includes('quota'))) {
+          continue;
+        }
+        if (attempt === keysCount - 1) {
+          throw err;
+        }
+      }
+    }
+
+    const textReply = response.text || 'I am not sure how to respond to that based on my resume.';
+    res.json({ message: textReply });
+  } catch (error: any) {
+    console.error('Error in AI Mock Interview:', error);
+    if (error?.status === 429 || (error?.message && error.message.includes('429')) || (error?.message && error.message.includes('quota'))) {
+      res.status(429).json({ message: 'AI rate limit reached. Please wait a moment.' });
+    } else {
+      res.status(500).json({ message: 'Internal server error during interview.' });
+    }
+  }
+};

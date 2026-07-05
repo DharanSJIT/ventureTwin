@@ -16,6 +16,12 @@ export interface User {
   activeTemplate?: string;
   username?: string;
   careerPath?: string;
+  timeline?: {
+    year: string;
+    title: string;
+    description: string;
+    type: 'skill' | 'project' | 'certification';
+  }[];
 }
 
 interface AuthState {

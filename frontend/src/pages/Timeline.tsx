@@ -12,44 +12,73 @@ export default function Timeline() {
   // Aggregate data for the timeline
   const timelineItems: any[] = [];
 
-  // Add projects
-  user.projects?.forEach((p: any) => {
-    timelineItems.push({
-      type: 'project',
-      title: p.title,
-      description: p.description,
-      date: p.date || new Date().toISOString().split('T')[0],
-      icon: <Code className="w-5 h-5 text-blue-600" />,
-      color: 'bg-blue-100 border-blue-200 text-blue-800'
+  if (user.timeline && user.timeline.length > 0) {
+    user.timeline.forEach((item) => {
+      let icon, color;
+      if (item.type === 'project') {
+        icon = <Code className="w-5 h-5 text-blue-600" />;
+        color = 'bg-blue-100 border-blue-200 text-blue-800';
+      } else if (item.type === 'skill') {
+        icon = <Briefcase className="w-5 h-5 text-purple-600" />;
+        color = 'bg-purple-100 border-purple-200 text-purple-800';
+      } else {
+        icon = <Award className="w-5 h-5 text-emerald-600" />;
+        color = 'bg-emerald-100 border-emerald-200 text-emerald-800';
+      }
+      
+      timelineItems.push({
+        type: item.type,
+        title: item.title,
+        description: item.description,
+        date: item.year, // "2021" or "Oct 2022"
+        icon,
+        color
+      });
     });
-  });
-
-  // Add certifications
-  user.certifications?.forEach((c: any) => {
-    timelineItems.push({
-      type: 'certification',
-      title: c.name,
-      description: `Issued by: ${c.issuer}`,
-      date: c.date || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // approx 1 month ago
-      icon: <Award className="w-5 h-5 text-emerald-600" />,
-      color: 'bg-emerald-100 border-emerald-200 text-emerald-800'
+    
+    // Sort chronologically (newest first). Since dates might just be years or strings, we'll try a basic string sort, 
+    // or convert to Date if possible. String reverse sort works for simple years like "2023", "2021".
+    timelineItems.sort((a, b) => b.date.localeCompare(a.date));
+  } else {
+    // Fallback: Add projects
+    user.projects?.forEach((p: any) => {
+      timelineItems.push({
+        type: 'project',
+        title: p.title,
+        description: p.description,
+        date: p.date || new Date().toISOString().split('T')[0],
+        icon: <Code className="w-5 h-5 text-blue-600" />,
+        color: 'bg-blue-100 border-blue-200 text-blue-800'
+      });
     });
-  });
 
-  // Add achievements
-  user.achievements?.forEach((a: any) => {
-    timelineItems.push({
-      type: 'achievement',
-      title: a.title,
-      description: a.description,
-      date: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // approx 2 months ago
-      icon: <GraduationCap className="w-5 h-5 text-purple-600" />,
-      color: 'bg-purple-100 border-purple-200 text-purple-800'
+    // Add certifications
+    user.certifications?.forEach((c: any) => {
+      timelineItems.push({
+        type: 'certification',
+        title: c.name,
+        description: `Issued by: ${c.issuer}`,
+        date: c.date || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        icon: <Award className="w-5 h-5 text-emerald-600" />,
+        color: 'bg-emerald-100 border-emerald-200 text-emerald-800'
+      });
     });
-  });
 
-  // Sort chronologically (newest first)
-  timelineItems.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    // Add achievements
+    user.achievements?.forEach((a: any) => {
+      timelineItems.push({
+        type: 'achievement',
+        title: a.title,
+        description: a.description,
+        date: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        icon: <GraduationCap className="w-5 h-5 text-purple-600" />,
+        color: 'bg-purple-100 border-purple-200 text-purple-800'
+      });
+    });
+
+    // Sort chronologically (newest first)
+    timelineItems.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 pb-12 max-w-4xl mx-auto">

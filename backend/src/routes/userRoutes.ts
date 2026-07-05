@@ -26,11 +26,12 @@ async function extractPortfolioData(resumeText: string) {
     let response: any;
     let lastError: any;
 
-    const prompt = `Extract the following portfolio data from the resume. Return ONLY a valid JSON object with the following four keys:
+    const prompt = `Extract the following portfolio data from the resume. Return ONLY a valid JSON object with the following five keys:
       1. 'skills' (array of strings, like "React", "Node.js").
       2. 'projects' (array of objects with 'title', 'description' (max 2 sentences), and 'technologies' (array of strings)).
       3. 'certifications' (array of objects with 'name', 'issuer', and 'date' (string, e.g. "2023")).
       4. 'achievements' (array of objects with 'title' and 'description').
+      5. 'timeline' (array of objects with 'year' (string), 'title' (short storytelling title like "Mastered JavaScript"), 'description', and 'type' (must be exactly one of: "skill", "project", "certification")). Create a chronological career timeline based on the dates in the resume.
       If any category is not found, return an empty array for that key. Resume: ${resumeText}`;
 
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
@@ -81,13 +82,14 @@ async function extractPortfolioData(resumeText: string) {
       projects: Array.isArray(data.projects) ? data.projects : [],
       certifications: Array.isArray(data.certifications) ? data.certifications : [],
       achievements: Array.isArray(data.achievements) ? data.achievements : [],
+      timeline: Array.isArray(data.timeline) ? data.timeline : [],
     };
   } catch (error: any) {
     console.error('Failed to extract portfolio data. The LLM might have returned invalid JSON or rate limit hit.', error);
     if (error?.status === 429 || error?.status === 503 || (error?.message && (error.message.includes('429') || error.message.includes('503')))) {
       throw new Error("RATE_LIMIT_OR_UNAVAILABLE");
     }
-    return { skills: [], projects: [], certifications: [], achievements: [] };
+    return { skills: [], projects: [], certifications: [], achievements: [], timeline: [] };
   }
 }
 
@@ -171,6 +173,9 @@ router.post('/resume/file', protect, resumeUpload.single('resume'), async (req: 
         user.projects = extractedData.projects as any;
         user.certifications = extractedData.certifications as any;
         user.achievements = extractedData.achievements as any;
+        if (extractedData.timeline && extractedData.timeline.length > 0) {
+          user.timeline = extractedData.timeline as any;
+        }
       } catch (e: any) {
         if (e.message === "RATE_LIMIT" || e.message === "RATE_LIMIT_OR_UNAVAILABLE") extractionFailed = true;
       }
@@ -191,7 +196,8 @@ router.post('/resume/file', protect, resumeUpload.single('resume'), async (req: 
       projects: user.projects,
       skills: user.skills,
       certifications: user.certifications,
-      achievements: user.achievements
+      achievements: user.achievements,
+      timeline: user.timeline
     });
   } catch (error: any) {
     console.error(error);
@@ -231,6 +237,9 @@ router.post('/resume/text', protect, async (req: Request | any, res: Response): 
       user.projects = extractedData.projects as any;
       user.certifications = extractedData.certifications as any;
       user.achievements = extractedData.achievements as any;
+      if (extractedData.timeline && extractedData.timeline.length > 0) {
+        user.timeline = extractedData.timeline as any;
+      }
     } catch (e: any) {
       if (e.message === "RATE_LIMIT" || e.message === "RATE_LIMIT_OR_UNAVAILABLE") extractionFailed = true;
     }
@@ -250,7 +259,8 @@ router.post('/resume/text', protect, async (req: Request | any, res: Response): 
       projects: user.projects,
       skills: user.skills,
       certifications: user.certifications,
-      achievements: user.achievements
+      achievements: user.achievements,
+      timeline: user.timeline
     });
   } catch (error: any) {
     console.error(error);
@@ -286,6 +296,7 @@ router.delete('/resume/file', protect, async (req: Request | any, res: Response)
     user.projects = [] as any;
     user.certifications = [] as any;
     user.achievements = [] as any;
+    user.timeline = [] as any;
     user.skills = [];
     await user.save();
 

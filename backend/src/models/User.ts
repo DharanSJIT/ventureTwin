@@ -51,6 +51,12 @@ const userSchema = new mongoose.Schema({
     title: { type: String, required: true },
     description: { type: String, default: '' }
   }],
+  timeline: [{
+    year: { type: String, required: true },
+    title: { type: String, required: true },
+    description: { type: String, default: '' },
+    type: { type: String, enum: ['skill', 'project', 'certification'], required: true }
+  }],
   careerPath: {
     type: String,
     default: 'software_engineering',

@@ -72,7 +72,8 @@ export default function Resume() {
           projects: data.projects,
           skills: data.skills,
           certifications: data.certifications,
-          achievements: data.achievements 
+          achievements: data.achievements,
+          timeline: data.timeline
         });
         if (data.message && data.message.includes('failed')) {
           toast.warning(data.message);
@@ -114,7 +115,8 @@ export default function Resume() {
           projects: [],
           skills: [],
           certifications: [],
-          achievements: []
+          achievements: [],
+          timeline: []
         });
         toast.success('Resume deleted successfully');
       } else {
@@ -150,7 +152,8 @@ export default function Resume() {
           projects: data.projects,
           skills: data.skills,
           certifications: data.certifications,
-          achievements: data.achievements
+          achievements: data.achievements,
+          timeline: data.timeline
         });
         if (data.message && data.message.includes('failed')) {
           toast.warning(data.message);
