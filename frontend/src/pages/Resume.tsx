@@ -19,10 +19,9 @@ export default function Resume() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [parsingStep, setParsingStep] = useState(0);
-  
   const componentRef = useRef<HTMLDivElement>(null);
   const handlePrint = useReactToPrint({
-    content: () => componentRef.current,
+    contentRef: componentRef,
     documentTitle: `${user?.name || 'User'}_Resume`,
   });
 
