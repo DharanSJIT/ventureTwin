@@ -197,23 +197,34 @@ export default function Resume() {
               </CardHeader>
               <CardContent className="p-8">
                 {user?.resumeUrl ? (
-                  <div className="bg-blue-50 border border-blue-100 rounded-xl p-6 flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-white rounded-xl shadow-sm flex items-center justify-center text-primary">
-                        <FileText className="w-6 h-6" />
+                  <div className="space-y-6">
+                    <div className="bg-blue-50 border border-blue-100 rounded-xl p-6 flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-white rounded-xl shadow-sm flex items-center justify-center text-primary">
+                          <FileText className="w-6 h-6" />
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-slate-900">Active Resume PDF</h4>
+                          <p className="text-sm text-slate-500">Successfully uploaded and parsed.</p>
+                        </div>
                       </div>
-                      <div>
-                        <h4 className="font-semibold text-slate-900">Active Resume PDF</h4>
-                        <p className="text-sm text-slate-500">Successfully uploaded and parsed.</p>
+                      <div className="flex gap-2">
+                        <Button variant="ghost" className="text-red-500 hover:text-red-600 hover:bg-red-50 px-3" onClick={handleDeleteResume} disabled={isDeleting}>
+                          {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                        </Button>
+                        <Button variant="outline" className="border-slate-200 bg-white" onClick={() => window.open(user.resumeUrl, '_blank')}>
+                          View File
+                        </Button>
                       </div>
                     </div>
-                    <div className="flex gap-2">
-                      <Button variant="ghost" className="text-red-500 hover:text-red-600 hover:bg-red-50 px-3" onClick={handleDeleteResume} disabled={isDeleting}>
-                        {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                      </Button>
-                      <Button variant="outline" className="border-slate-200 bg-white" onClick={() => window.open(user.resumeUrl, '_blank')}>
-                        View File
-                      </Button>
+                    
+                    {/* PDF Preview */}
+                    <div className="w-full h-[600px] border border-slate-200 rounded-xl overflow-hidden bg-white">
+                      <iframe 
+                        src={`${user.resumeUrl}#toolbar=0`} 
+                        className="w-full h-full border-0"
+                        title="Resume Preview"
+                      />
                     </div>
                   </div>
                 ) : isUploading ? (
