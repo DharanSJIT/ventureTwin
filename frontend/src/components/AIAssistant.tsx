@@ -18,7 +18,7 @@ export default function AIAssistant() {
   
   // Voice State
   const [isSending, setIsSending] = useState(false);
-  const [isVoiceOutputEnabled, setIsVoiceOutputEnabled] = useState(true);
+  const [isVoiceOutputEnabled, setIsVoiceOutputEnabled] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const recognitionRef = useRef<any>(null);
@@ -208,15 +208,6 @@ export default function AIAssistant() {
                   Portfolio AI Builder
                 </div>
                 <div className="flex items-center gap-1">
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className={`h-8 w-8 ${!isVoiceOutputEnabled ? 'text-primary-foreground/50' : 'text-primary-foreground'} hover:bg-primary-foreground/20`}
-                    onClick={() => setIsVoiceOutputEnabled(!isVoiceOutputEnabled)}
-                    title={isVoiceOutputEnabled ? "Mute voice output" : "Enable voice output"}
-                  >
-                    {isVoiceOutputEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
-                  </Button>
                   <Button variant="ghost" size="icon" className="h-8 w-8 text-primary-foreground hover:bg-primary-foreground/20" onClick={() => setIsOpen(false)}>
                     <X className="w-5 h-5" />
                   </Button>
