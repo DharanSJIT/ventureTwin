@@ -6,7 +6,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { UploadCloud, FileText, CheckCircle2, Loader2, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
-
+import { useReactToPrint } from 'react-to-print';
+import { useRef } from 'react';
+import { DynamicResume } from '../components/DynamicResume';
 export default function Resume() {
   const user = useAuthStore((state) => state.user);
   const login = useAuthStore((state) => state.login);
@@ -17,6 +19,12 @@ export default function Resume() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [parsingStep, setParsingStep] = useState(0);
+  
+  const componentRef = useRef<HTMLDivElement>(null);
+  const handlePrint = useReactToPrint({
+    content: () => componentRef.current,
+    documentTitle: `${user?.name || 'User'}_Resume`,
+  });
 
   const parsingSteps = [
     "Scanning document...",
@@ -219,12 +227,17 @@ export default function Resume() {
                     </div>
                     
                     {/* PDF Preview */}
-                    <div className="w-full h-[600px] border border-slate-200 rounded-xl overflow-hidden bg-white">
-                      <iframe 
-                        src={`${user.resumeUrl}#toolbar=0`} 
-                        className="w-full h-full border-0"
-                        title="Resume Preview"
-                      />
+                    <div className="w-full bg-slate-100 border border-slate-200 rounded-xl overflow-hidden flex flex-col items-center py-8 relative">
+                      <div className="absolute top-4 right-4 z-10">
+                        <Button onClick={handlePrint} className="bg-primary text-white shadow-md">
+                          Download PDF
+                        </Button>
+                      </div>
+                      
+                      {/* Scale container so it fits on screen nicely */}
+                      <div className="transform origin-top scale-[0.7] md:scale-[0.8] lg:scale-[0.9] border border-slate-200 shadow-xl bg-white">
+                        <DynamicResume user={user} ref={componentRef} />
+                      </div>
                     </div>
                   </div>
                 ) : isUploading ? (

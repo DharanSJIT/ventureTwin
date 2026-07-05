@@ -7,13 +7,14 @@ import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
+import { DynamicResume } from './DynamicResume';
 
 export default function AIAssistant() {
   const [isOpen, setIsOpen] = useState(false);
   const [message, setMessage] = useState('');
   
-  const [chatHistory, setChatHistory] = useState<{role: 'ai' | 'user', text: string}[]>([
-    { role: 'ai', text: 'Hi! Tell me about a new project, skill, or certification you want to add to your portfolio.' }
+  const [chatHistory, setChatHistory] = useState<{role: 'ai' | 'user', text: string, type?: 'text' | 'resume_prompt' | 'resume_preview'}[]>([
+    { role: 'ai', text: 'Hi! Tell me about a new project, skill, or certification you want to add to your portfolio.', type: 'text' }
   ]);
   
   // Voice State
@@ -90,6 +91,10 @@ export default function AIAssistant() {
     window.speechSynthesis.speak(utterance);
   };
 
+  const handleShowResume = () => {
+    setChatHistory(prev => [...prev, { role: 'ai', text: 'Here is your updated resume:', type: 'resume_preview' }]);
+  };
+
   const handleSend = async () => {
     if (!message.trim()) return;
     const userMsg = message.trim();
@@ -162,7 +167,16 @@ export default function AIAssistant() {
         if (!finalMessage) {
            finalMessage = "I've successfully updated your portfolio!";
         }
-        setChatHistory(prev => [...prev, { role: 'ai', text: finalMessage }]);
+        
+        const newMessages: {role: 'ai' | 'user', text: string, type?: 'text' | 'resume_prompt'}[] = [
+          { role: 'ai', text: finalMessage, type: 'text' }
+        ];
+        
+        if (triggersConfetti) {
+          newMessages.push({ role: 'ai', text: 'Do you want to see your updated resume?', type: 'resume_prompt' });
+        }
+        
+        setChatHistory(prev => [...prev, ...newMessages]);
         speak(finalMessage);
       } else {
         const errorMsg = data.message || 'Error updating portfolio.';
@@ -217,6 +231,24 @@ export default function AIAssistant() {
               {/* Messages */}
               <div className="flex-1 p-4 overflow-y-auto bg-slate-50 space-y-4">
                 {chatHistory.map((msg, i) => {
+                  if (msg.type === 'resume_preview') {
+                    return (
+                      <div key={i} className="flex justify-start">
+                        <div className="w-[85%] overflow-hidden bg-white border border-slate-100 rounded-2xl rounded-bl-sm shadow-sm relative h-[400px]">
+                          <div className="absolute top-0 left-0 w-full p-2 bg-slate-50 border-b border-slate-100 text-xs font-semibold text-slate-500 z-10 flex justify-between items-center">
+                            <span>Resume Preview</span>
+                          </div>
+                          {/* We use a container that scales down the 800px resume to fit inside the chat bubble */}
+                          <div className="absolute top-10 left-0 right-0 bottom-0 overflow-y-auto overflow-x-hidden bg-slate-100 custom-scrollbar">
+                            <div className="transform origin-top-left scale-[0.35] w-[800px]">
+                              <DynamicResume user={user} />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
+
                   const safeText = msg.text || '';
                   const cleanText = safeText.replace(/<function>[\s\S]*?<\/function>/g, '').trim();
                   if (!cleanText) return null; // Don't render empty bubbles
@@ -225,6 +257,18 @@ export default function AIAssistant() {
                     <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                       <div className={`max-w-[85%] rounded-2xl px-4 py-2 text-sm shadow-sm ${msg.role === 'user' ? 'bg-primary text-primary-foreground rounded-br-sm' : 'bg-white text-slate-800 border border-slate-100 rounded-bl-sm'}`}>
                         {cleanText}
+                        
+                        {msg.type === 'resume_prompt' && (
+                          <div className="mt-3 flex gap-2">
+                            <Button 
+                              size="sm" 
+                              className="h-8 text-xs bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200 shadow-none" 
+                              onClick={handleShowResume}
+                            >
+                              Yes, show me
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   );
