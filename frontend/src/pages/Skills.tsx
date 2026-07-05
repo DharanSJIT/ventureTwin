@@ -6,7 +6,8 @@ import { Link } from 'react-router-dom';
 import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Tooltip } from 'recharts';
 import { ReactFlow, Background, Controls, type Node, type Edge, useNodesState, useEdgesState } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { useMemo, useEffect } from 'react';
+import { useMemo, useState, useEffect } from 'react';
+import { SkillsGalaxy } from '../components/SkillsGalaxy';
 
 // Helper to categorize skills into domains
 const categorizeSkill = (skill: string) => {
@@ -35,6 +36,7 @@ const generateScore = (str: string) => {
 
 export default function Skills() {
   const user = useAuthStore((state) => state.user);
+  const [viewMode, setViewMode] = useState<'graph' | 'galaxy'>('galaxy');
   const skills = user?.skills || [];
   
   // Create Neural Network Graph Data
@@ -156,9 +158,36 @@ export default function Skills() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold tracking-tight text-slate-900">Skills</h1>
-        <p className="text-slate-500">Your extracted technical and soft skills.</p>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex flex-col gap-2">
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900">Skills</h1>
+          <p className="text-slate-500">Your extracted technical and soft skills.</p>
+        </div>
+        
+        {skills.length > 0 && (
+          <div className="flex bg-slate-100 p-1 rounded-lg border border-slate-200 w-fit">
+            <button
+              onClick={() => setViewMode('galaxy')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                viewMode === 'galaxy' 
+                  ? 'bg-white text-slate-900 shadow-sm' 
+                  : 'text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              3D Galaxy
+            </button>
+            <button
+              onClick={() => setViewMode('graph')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                viewMode === 'graph' 
+                  ? 'bg-white text-slate-900 shadow-sm' 
+                  : 'text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              2D Graph
+            </button>
+          </div>
+        )}
       </div>
 
       {!skills.length ? (
@@ -185,6 +214,14 @@ export default function Skills() {
               </Link>
             </CardContent>
           </Card>
+        </motion.div>
+      ) : viewMode === 'galaxy' ? (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.3 }}
+        >
+          <SkillsGalaxy skills={skills} />
         </motion.div>
       ) : (
         <div className="grid gap-6 md:grid-cols-2">
